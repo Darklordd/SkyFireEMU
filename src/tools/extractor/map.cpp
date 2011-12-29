@@ -118,7 +118,7 @@ void ExtractMapsFromMpq(uint32 build)
 
 // Map file format data
 static char const* MAP_MAGIC         = "MAPS";
-static char const* MAP_VERSION_MAGIC = "v1.1";
+static char const* MAP_VERSION_MAGIC = "v1.2";
 static char const* MAP_AREA_MAGIC    = "AREA";
 static char const* MAP_HEIGHT_MAGIC  = "MHGT";
 static char const* MAP_LIQUID_MAGIC  = "MLIQ";
@@ -179,6 +179,8 @@ struct map_liquidHeader
     uint8  width;
     uint8  height;
     float  liquidLevel;
+    uint32 holesOffset;
+    uint32 holesSize;
 };
 
 float selectUInt8StepStore(float maxDiff)
