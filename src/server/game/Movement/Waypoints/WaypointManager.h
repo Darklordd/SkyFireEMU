@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
@@ -27,7 +26,7 @@
 struct WaypointData
 {
     uint32 id;
-    float x, y, z;
+    float x, y, z, orientation;
     bool run;
     uint32 delay;
     uint32 event_id;
@@ -69,3 +68,4 @@ class WaypointMgr
 #define sWaypointMgr ACE_Singleton<WaypointMgr, ACE_Null_Mutex>::instance()
 
 #endif
+

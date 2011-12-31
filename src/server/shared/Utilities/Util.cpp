@@ -51,6 +51,11 @@ double rand_norm(void)
     return sfmtRand->Random();
 }
 
+float rand_norm_f(void)
+{
+	return (float)mtRand->randExc();
+}
+
 double rand_chance (void)
 {
     return sfmtRand->Random() * 100.0;
@@ -67,6 +72,11 @@ int32 irand(int32 min, int32 max)
 uint32 urand(uint32 min, uint32 max)
 {
     return mtRand->randInt (max - min) + min;
+}
+
+float frand (float min, float max)
+{
+	return mtRand->randExc (max - min) + min;
 }
 
 int32 rand32()

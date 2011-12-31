@@ -20,7 +20,7 @@
 #define TRINITYSERVER_MOVESPLINEINIT_H
 
 #include "MoveSplineInitArgs.h"
-#include "PathFinderMovementGenerator.h"
+#include "PathInfo.h"
 class Unit;
 
 namespace Movement
@@ -143,7 +143,7 @@ namespace Movement
     {
         if (generatePath)
         {
-            PathFinderMovementGenerator path(&unit);
+            PathInfo path(&unit);
             path.calculate(dest.x, dest.y, dest.z, forceDestination);
             MovebyPath(path.getPath());
         }

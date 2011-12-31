@@ -201,7 +201,7 @@ class mob_corrupted_soul_fragment : public CreatureScript
 
             void MovementInform(uint32 type, uint32 id)
             {
-                if (type != TARGETED_MOTION_TYPE)
+                if (type != FOLLOW_MOTION_TYPE)
                     return;
 
                 if (instance)

@@ -35,9 +35,9 @@ enum DynamicObjectType
 
 class DynamicObject : public WorldObject, public GridObject<DynamicObject>
 {
-    public:
-        DynamicObject(bool isWorldObject);
-        ~DynamicObject();
+public:
+	DynamicObject();
+	~DynamicObject();
 
         void AddToWorld();
         void RemoveFromWorld();

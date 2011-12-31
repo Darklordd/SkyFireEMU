@@ -110,9 +110,9 @@ public:
             {
                 if (Creature* target = Unit::GetCreature(*summoned, targetGUID))
                 {
-                    target->SendMonsterMove(target->GetPositionX(), target->GetPositionY(), me->GetPositionZ()+15.0f, 0);
-                    target->SetPosition(target->GetPositionX(), target->GetPositionY(), me->GetPositionZ()+15.0f, 0.0f);
-                    summoned->CastSpell(target, SPELL_RIBBON_OF_SOULS, false);
+					target->MonsterMoveWithSpeed(target->GetPositionX(), target->GetPositionY(), me->GetPositionZ()+15.0f, 0);
+					target->SetPosition(target->GetPositionX(), target->GetPositionY(), me->GetPositionZ()+15.0f, 0.0f);
+					summoned->CastSpell(target, SPELL_RIBBON_OF_SOULS, false);
                 }
 
                 summoned->AddUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
@@ -185,10 +185,10 @@ public:
             {
                 if (EventMove_Timer <= diff)
                 {
-                    me->AddUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
-                    me->SendMonsterMoveWithSpeed(me->GetPositionX(), me->GetPositionY(), HIGHBORNE_LOC_Y_NEW, 5000);
-                    me->SetPosition(me->GetPositionX(), me->GetPositionY(), HIGHBORNE_LOC_Y_NEW, me->GetOrientation());
-                    EventMove = false;
+					me->AddUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
+					me->MonsterMoveWithSpeed(me->GetPositionX(), me->GetPositionY(), HIGHBORNE_LOC_Y_NEW, me->GetDistance(me->GetPositionX(), me->GetPositionY(), HIGHBORNE_LOC_Y_NEW) / (5000 * 0.001f));
+					me->SetPosition(me->GetPositionX(), me->GetPositionY(), HIGHBORNE_LOC_Y_NEW, me->GetOrientation());
+					EventMove = false;
                 } else EventMove_Timer -= diff;
             }
             if (EventCast)

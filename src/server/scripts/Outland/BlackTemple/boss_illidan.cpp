@@ -1413,8 +1413,8 @@ public:
                     instance->HandleGameObject(DoorGUID[i], false);
                     // JustCreated = false;
                 }
-				else
-				{ // open all doors, raid wiped
+                else
+                { // open all doors, raid wiped
                     instance->HandleGameObject(GateGUID, true);
                     WalkCount = 1; // skip first wp
 
@@ -1495,7 +1495,7 @@ public:
             instance->SetData(DATA_ILLIDANSTORMRAGEEVENT, IN_PROGRESS);
             for (uint8 i = 0; i < 2; ++i)
 
-			instance->HandleGameObject(DoorGUID[i], false);
+            instance->HandleGameObject(DoorGUID[i], false);
             if (GETCRE(Illidan, IllidanGUID))
             {
                 Illidan->RemoveAurasDueToSpell(SPELL_KNEEL);
@@ -1513,11 +1513,11 @@ public:
             me->setActive(true);
             me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
 
-			if (!JustCreated)
+            if (!JustCreated)
                 return;
             float x, y, z;
 
-			if (GETGO(Gate, GateGUID))
+            if (GETGO(Gate, GateGUID))
                 Gate->GetPosition(x, y, z);
             else
                 return; // if door not spawned, don't crash server
@@ -1983,7 +1983,7 @@ void boss_illidan_stormrage::boss_illidan_stormrageAI::HandleTalkSequence()
                 Akama->GetMotionMaster()->Clear(false);
                 // Akama->GetMotionMaster()->MoveIdle();
                 Akama->SetPosition(x, y, z, 0.0f);
-                Akama->SendMonsterMove(x, y, z, 0, MOVEMENTFLAG_NONE, 0); // Illidan must not die until Akama arrives.
+                Akama->MonsterMoveWithSpeed(x, y, z, 0); // Illidan must not die until Akama arrives.
                 Akama->GetMotionMaster()->MoveChase(me);
             }
         }

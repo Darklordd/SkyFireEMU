@@ -16,28 +16,36 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _VMAPFACTORY_H
-#define _VMAPFACTORY_H
+#ifndef _MMAP_FACTORY_H
+#define _MMAP_FACTORY_H
 
-#include "IVMapManager.h"
+#include "MMapManager.h"
+#include "UnorderedMap.h"
+#include "DetourAlloc.h"
+#include "DetourNavMesh.h"
+#include "DetourNavMeshQuery.h"
 
-/**
-This is the access point to the VMapManager.
-*/
-
-namespace VMAP
+namespace MMAP
 {
-    //===========================================================
-
-    class VMapFactory
+    enum MMAP_LOAD_RESULT
     {
-        public:
-            static IVMapManager* createOrGetVMapManager();
-            static void clear();
-
-            static void preventSpellsFromBeingTestedForLoS(const char* pSpellIdString);
-            static bool checkSpellForLoS(unsigned int pSpellId);
+        MMAP_LOAD_RESULT_ERROR,
+        MMAP_LOAD_RESULT_OK,
+        MMAP_LOAD_RESULT_IGNORED,
     };
 
+    // static class
+    // holds all mmap global data
+    // access point to MMapManager singleton
+    class MMapFactory
+    {
+        public:
+            static MMapManager* createOrGetMMapManager();
+            static void clear();
+            static void preventPathfindingOnMaps(const char* ignoreMapIds);
+            static bool IsPathfindingEnabled(uint32 mapId);
+    };
 }
+
 #endif
+

@@ -1,7 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -55,7 +54,7 @@ namespace VMAP
     }
 
     IVMapManager* gVMapManager = 0;
-    Table<unsigned int , bool>* iIgnoreSpellIds=0;
+    Table<unsigned int, bool>* iIgnoreSpellIds=0;
 
     //===============================================
     // result false, if no more id are found
@@ -84,13 +83,13 @@ namespace VMAP
 
     //===============================================
     /**
-    parameter: String of map ids. Delimiter = ", "
+    parameter: String of map ids. Delimiter = ","
     */
 
     void VMapFactory::preventSpellsFromBeingTestedForLoS(const char* pSpellIdString)
     {
         if (!iIgnoreSpellIds)
-            iIgnoreSpellIds = new Table<unsigned int , bool>();
+            iIgnoreSpellIds = new Table<unsigned int, bool>();
         if (pSpellIdString != NULL)
         {
             unsigned int pos =0;
