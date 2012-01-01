@@ -506,11 +506,11 @@ bool Group::RemoveMember(uint64 guid, const RemoveMethod &method /*= GROUP_REMOV
         }
 
         // Remove player from group in DB
-		PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_GROUP_MEMBER);
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_GROUP_MEMBER);
 
-		stmt->setUInt32(0, GUID_LOPART(guid));
+        stmt->setUInt32(0, GUID_LOPART(guid));
 
-		CharacterDatabase.Execute(stmt);
+        CharacterDatabase.Execute(stmt);
 
         // Reevaluate group enchanter if the leaving player had enchanting skill or the player is offline
         if ((player && player->GetSkillValue(SKILL_ENCHANTING)) || !player)

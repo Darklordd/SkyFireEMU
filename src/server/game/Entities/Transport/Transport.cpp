@@ -632,14 +632,14 @@ void Transport::BuildStopMovePacket(Map const* targetMap)
 
 uint32 Transport::AddNPCPassenger(uint32 tguid, uint32 entry, float x, float y, float z, float o, uint32 anim)
 {
-	Map* map = GetMap();
-	Creature* creature = new Creature;
+    Map* map = GetMap();
+    Creature* creature = new Creature;
 
-	if (!creature->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), map, GetPhaseMask(), entry, 0, GetGOInfo()->faction, 0, 0, 0, 0))
-	{
-		delete creature;
-		return 0;
-	}
+    if (!creature->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), map, GetPhaseMask(), entry, 0, GetGOInfo()->faction, 0, 0, 0, 0))
+    {
+        delete creature;
+        return 0;
+    }
 
     creature->SetTransport(this);
     creature->AddUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT);

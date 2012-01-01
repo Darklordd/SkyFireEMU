@@ -4900,10 +4900,10 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                         }
                     }
                     break;
-				case 46361:                                     // Reinforced Net
-					if (caster)
-						target->GetMotionMaster()->MoveFall();
-					break;
+                case 46361:                                     // Reinforced Net
+                    if (caster)
+                        target->GetMotionMaster()->MoveFall();
+                    break;
                 case 49028:
                     if (caster)
                         if (AuraEffect* aurEff = caster->GetAuraEffect(63330, 0)) // glyph of Dancing Rune Weapon

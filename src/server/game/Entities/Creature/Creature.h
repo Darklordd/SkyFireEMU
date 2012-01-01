@@ -441,8 +441,8 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
 {
     public:
 
-		explicit Creature();
-		virtual ~Creature();
+        explicit Creature();
+        virtual ~Creature();
 
         void AddToWorld();
         void RemoveFromWorld();
