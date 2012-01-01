@@ -137,6 +137,7 @@ enum SpellModType
 class Aura;
 class AuraEffect;
 class SpellInfo;
+
 // Spell modifier (used for modify other spells)
 struct SpellModifier
 {
@@ -1296,8 +1297,6 @@ class Unit : public WorldObject
 
         typedef std::map<uint8, AuraApplication*> VisibleAuraMap;
 
-        virtual ~Unit ();
-
         UnitAI* GetAI() { return i_AI; }
         void SetAI(UnitAI* newAI) { i_AI = newAI; }
 
@@ -2306,7 +2305,9 @@ class Unit : public WorldObject
         Movement::MoveSpline * movespline;
 
     protected:
-        explicit Unit ();
+        explicit Unit();
+    public:
+        virtual ~Unit();
 
         UnitAI *i_AI, *i_disabledAI;
 

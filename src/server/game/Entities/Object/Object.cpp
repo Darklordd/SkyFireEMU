@@ -85,7 +85,7 @@ Object::Object() : m_PackGUID(sizeof(uint64)+1)
 WorldObject::~WorldObject()
 {
     // this may happen because there are many !create/delete
-    if (IsWorldObject() && m_currMap)
+    if (m_isWorldObject && m_currMap)
     {
         if (GetTypeId() == TYPEID_CORPSE)
         {

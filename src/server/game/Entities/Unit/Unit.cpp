@@ -89,12 +89,16 @@ float playerBaseMoveSpeed[MAX_MOVE_TYPE] =
 
 // Used for prepare can/can`t triggr aura
 static bool InitTriggerAuraData();
+
 // Define can trigger auras
 static bool isTriggerAura[TOTAL_AURAS];
+
 // Define can't trigger auras (need for disable second trigger)
 static bool isNonTriggerAura[TOTAL_AURAS];
+
 // Triggered always, even from triggered spells
 static bool isAlwaysTriggeredAura[TOTAL_AURAS];
+
 // Prepare lists
 static bool procPrepared = InitTriggerAuraData();
 
@@ -106,6 +110,7 @@ m_damageType(_damageType), m_attackType(BASE_ATTACK)
     m_resist = 0;
     m_block = 0;
 }
+
 DamageInfo::DamageInfo(CalcDamageInfo& dmgInfo)
 : m_attacker(dmgInfo.attacker), m_victim(dmgInfo.target), m_damage(dmgInfo.damage), m_spellInfo(NULL), m_schoolMask(SpellSchoolMask(dmgInfo.damageSchoolMask)),
 m_damageType(DIRECT_DAMAGE), m_attackType(dmgInfo.attackType)
@@ -144,9 +149,7 @@ void DamageInfo::BlockDamage(uint32 amount)
 
 ProcEventInfo::ProcEventInfo(Unit* actor, Unit* actionTarget, Unit* procTarget, uint32 typeMask, uint32 spellTypeMask, uint32 spellPhaseMask, uint32 hitMask, Spell* spell, DamageInfo* damageInfo, HealInfo* healInfo)
 :_actor(actor), _actionTarget(actionTarget), _procTarget(procTarget), _typeMask(typeMask), _spellTypeMask(spellTypeMask), _spellPhaseMask(spellPhaseMask),
-_hitMask(hitMask), _spell(spell), _damageInfo(damageInfo), _healInfo(healInfo)
-{
-}
+_hitMask(hitMask), _spell(spell), _damageInfo(damageInfo), _healInfo(healInfo) { }
 
 // we can disable this warning for this since it only
 // causes undefined behavior when passed to the base class constructor
@@ -162,6 +165,7 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
 #ifdef _MSC_VER
 #pragma warning(default:4355)
 #endif
+
     m_objectType |= TYPEMASK_UNIT;
     m_objectTypeId = TYPEID_UNIT;
 
@@ -170,6 +174,7 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
     m_attackTimer[BASE_ATTACK] = 0;
     m_attackTimer[OFF_ATTACK] = 0;
     m_attackTimer[RANGED_ATTACK] = 0;
+
     m_modAttackSpeedPct[BASE_ATTACK] = 1.0f;
     m_modAttackSpeedPct[OFF_ATTACK] = 1.0f;
     m_modAttackSpeedPct[RANGED_ATTACK] = 1.0f;
@@ -209,7 +214,7 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
         m_auraModifiersGroup[i][TOTAL_VALUE] = 0.0f;
         m_auraModifiersGroup[i][TOTAL_PCT] = 1.0f;
     }
-                                                            // implement 50% base damage from offhand
+    // implement 50% base damage from offhand
     m_auraModifiersGroup[UNIT_MOD_DAMAGE_OFFHAND][TOTAL_PCT] = 0.5f;
 
     for (uint8 i = 0; i < MAX_ATTACK; ++i)
@@ -253,8 +258,6 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
 
     _focusSpell = NULL;
     _targetLocked = false;
-
-    m_spellModTakingSpell = NULL;
 }
 
 ////////////////////////////////////////////////////////////
@@ -279,7 +282,7 @@ void GlobalCooldownMgr::CancelGlobalCooldown(SpellInfo const* spellInfo)
 // Methods of class Unit
 Unit::~Unit()
 {
-    // set current spells as deletable
+    // set current spells as able to be deleted.
     for (uint8 i = 0; i < CURRENT_MAX_SPELL; ++i)
         if (m_currentSpells[i])
         {
