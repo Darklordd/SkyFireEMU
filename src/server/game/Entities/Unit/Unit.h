@@ -1680,10 +1680,14 @@ class Unit : public WorldObject
         //void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint8 type, uint32 MovementFlags, uint32 Time, Player* player = NULL);
         void SendMonsterMoveTransport(Unit* vehicleOwner);
         void SendMovementFlagUpdate();
-        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_LEVITATING);}
-        bool IsWalking() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_WALKING);}
         template<typename PathElem, typename PathNode>
         void SendMonsterMoveByPath(Path<PathElem, PathNode> const& path, uint32 start, uint32 end);
+        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_LEVITATING);}
+        bool IsWalking() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_WALKING);}
+
+        void SetInFront(Unit const* target);
+        void SetFacingTo(float ori);
+        void SetFacingToObject(WorldObject* pObject);
 
         void SendChangeCurrentVictimOpcode(HostileReference* pHostileReference);
         void SendClearThreatListOpcode();
@@ -1991,9 +1995,8 @@ class Unit : public WorldObject
         float GetWeaponDamageRange(WeaponAttackType attType , WeaponDamageRange type) const;
         void SetBaseWeaponDamage(WeaponAttackType attType , WeaponDamageRange damageRange, float value) { m_weaponDamage[attType][damageRange] = value; }
 
-		void SetInFront(Unit const* target);
-		void SetFacingTo(float ori);
-		void SetFacingToObject(WorldObject* pObject);
+        bool isInFrontInMap(Unit const* target, float distance, float arc = M_PI) const;
+        bool isInBackInMap(Unit const* target, float distance, float arc = M_PI) const;
 
         // Visibility system
         bool IsVisible() const { return (m_serverSideVisibility.GetValue(SERVERSIDE_VISIBILITY_GM) > SEC_PLAYER) ? false : true; }

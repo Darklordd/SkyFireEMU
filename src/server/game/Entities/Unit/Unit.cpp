@@ -154,16 +154,16 @@ _hitMask(hitMask), _spell(spell), _damageInfo(damageInfo), _healInfo(healInfo)
 #pragma warning(disable:4355)
 #endif
 Unit::Unit(): WorldObject(),
-    m_movedPlayer(NULL), m_lastSanctuaryTime(0), IsAIEnabled(false), NeedChangeAI(false),
-    m_ControlledByPlayer(false), i_AI(NULL), i_disabledAI(NULL), m_procDeep(0),
-    m_removedAurasCount(0), i_motionMaster(this), m_ThreatManager(this), m_vehicle(NULL),
-    m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), movespline(new Movement::MoveSpline())
+m_movedPlayer(NULL), m_lastSanctuaryTime(0), IsAIEnabled(false), NeedChangeAI(false),
+m_ControlledByPlayer(false), i_AI(NULL), i_disabledAI(NULL), m_procDeep(0),
+m_removedAurasCount(0), i_motionMaster(this), m_ThreatManager(this), m_vehicle(NULL),
+m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), movespline(new Movement::MoveSpline())
 {
 #ifdef _MSC_VER
 #pragma warning(default:4355)
 #endif
-    m_objectType |= TYPEMASK_UNIT;
-    m_objectTypeId = TYPEID_UNIT;
+	m_objectType |= TYPEMASK_UNIT;
+	m_objectTypeId = TYPEID_UNIT;
 
     m_updateFlag = (UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION);
 
@@ -379,11 +379,12 @@ bool Unit::haveOffhandWeapon() const
         return m_canDualWield;
 }
 
-void Unit::SendMonsterMoveWithSpeedToCurrentDestination(Player* player)
+void Unit::MonsterMoveWithSpeed(float x, float y, float z, float speed, bool generatePath, bool forceDestination)
 {
-    float x, y, z;
-    if (GetMotionMaster()->GetDestination(x, y, z))
-        SendMonsterMoveWithSpeed(x, y, z, 0, player);
+    Movement::MoveSplineInit init(*this);
+    init.MoveTo(x, y, z, generatePath, forceDestination);
+    init.SetVelocity(speed);
+    init.Launch();
 }
 
 void Unit::UpdateSplineMovement(uint32 t_diff)
@@ -3041,17 +3042,6 @@ bool Unit::isInFrontInMap(Unit const* target, float distance,  float arc) const
 bool Unit::isInBackInMap(Unit const* target, float distance, float arc) const
 {
     return IsWithinDistInMap(target, distance) && !HasInArc(2 * M_PI - arc, target);
-}
-
-void Unit::SetFacingToObject(WorldObject* pObject)
-{
-    // update orientation at server
-    SetOrientation(GetAngle(pObject));
-
-    // and client
-    WorldPacket data;
-    BuildHeartBeatMsg(&data);
-    SendMessageToSet(&data, false);
 }
 
 bool Unit::isInAccessiblePlaceFor(Creature const* c) const
@@ -12643,7 +12633,7 @@ void Unit::setDeathState(DeathState s)
         ClearDiminishings();
         GetMotionMaster()->Clear(false);
         GetMotionMaster()->MoveIdle();
-        SendMonsterStop(true);
+        StopMoving();
         // without this when removing IncreaseMaxHealth aura player may stuck with 1 hp
         // do not why since in IncreaseMaxHealth currenthealth is checked
         SetHealth(0);
@@ -14621,7 +14611,7 @@ void Unit::StopMoving()
     //Relocate(GetPositionX(), GetPositionY(), GetPositionZ());
 
     if (!(GetUnitMovementFlags() & MOVEMENTFLAG_ONTRANSPORT))
-        SendMonsterStop();
+        StopMoving();
 }
 
 void Unit::SendMovementFlagUpdate()

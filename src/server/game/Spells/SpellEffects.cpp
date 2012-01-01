@@ -2770,8 +2770,9 @@ void Spell::EffectPersistentAA(SpellEffIndex effIndex)
         // Caster not in world, might be spell triggered from aura removal
         if (!caster->IsInWorld())
             return;
+
         DynamicObject* dynObj = new DynamicObject();
-        if (!dynObj->CreateDynamicObject(sObjectMgr->GenerateLowGuid(HIGHGUID_DYNAMICOBJECT), caster, m_spellInfo->Id, *m_targets.GetDst(), radius, false, DYNAMIC_OBJECT_AREA_SPELL))
+        if (!dynObj->CreateDynamicObject(sObjectMgr->GenerateLowGuid(HIGHGUID_DYNAMICOBJECT), m_caster, m_spellInfo->Id, *m_targets.GetDst(), radius, true, DYNAMIC_OBJECT_FARSIGHT_FOCUS))
         {
             delete dynObj;
             return;
@@ -3572,23 +3573,11 @@ void Spell::EffectDistract(SpellEffIndex /*effIndex*/)
     if (unitTarget->HasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_STUNNED | UNIT_STAT_FLEEING))
         return;
 
-	unitTarget->SetFacingTo(unitTarget->GetAngle(m_targets.GetDst()));
-	unitTarget->ClearUnitState(UNIT_STAT_MOVING);
+    unitTarget->SetFacingTo(unitTarget->GetAngle(m_targets.GetDst()));
+    unitTarget->ClearUnitState(UNIT_STAT_MOVING);
 
-    if (unitTarget->GetTypeId() == TYPEID_PLAYER)
-    {
-        // For players just turn them
-        unitTarget->ToPlayer()->UpdatePosition(unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), angle, false);
-        unitTarget->ToPlayer()->SendTeleportAckPacket();
-    }
-    else
-    {
-        // Set creature Distracted, Stop it, And turn it
-        unitTarget->SetOrientation(angle);
-        unitTarget->StopMoving();
+    if (unitTarget->GetTypeId() == TYPEID_UNIT)
         unitTarget->GetMotionMaster()->MoveDistract(damage * IN_MILLISECONDS);
-        unitTarget->SendMovementFlagUpdate();
-    }
 }
 
 void Spell::EffectPickPocket(SpellEffIndex /*effIndex*/)

@@ -1194,9 +1194,9 @@ void MovementInfo::OutDebug()
 }
 
 WorldObject::WorldObject(): WorldLocation(),
-	m_isWorldObject(false), m_name(""), m_isActive(false), m_zoneScript(NULL),
-	m_transport(NULL), m_currMap(NULL), m_InstanceId(0),
-	m_phaseMask(PHASEMASK_NORMAL), m_notifyflags(0), m_executed_notifies(0)
+    m_isWorldObject(false), m_name(""), m_isActive(false), m_zoneScript(NULL),
+    m_transport(NULL), m_currMap(NULL), m_InstanceId(0),
+    m_phaseMask(PHASEMASK_NORMAL), m_notifyflags(0), m_executed_notifies(0)
 {
     m_serverSideVisibility.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE | GHOST_VISIBILITY_GHOST);
     m_serverSideVisibilityDetect.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE);
@@ -2221,23 +2221,23 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
     TempSummon* summon = NULL;
     switch (mask)
     {
-        case UNIT_MASK_SUMMON:
-            summon = new TempSummon(properties, summoner, false);
-            break;
-        case UNIT_MASK_GUARDIAN:
-            summon = new Guardian(properties, summoner, false);
-            break;
-        case UNIT_MASK_PUPPET:
-            summon = new Puppet(properties, summoner);
-            break;
-        case UNIT_MASK_TOTEM:
-            summon = new Totem(properties, summoner);
-            break;
-        case UNIT_MASK_MINION:
-            summon = new Minion(properties, summoner, false);
-            break;
-        default:
-            return NULL;
+    case UNIT_MASK_SUMMON:
+        summon = new TempSummon(properties, summoner);
+        break;
+    case UNIT_MASK_GUARDIAN:
+        summon = new Guardian(properties, summoner);
+        break;
+    case UNIT_MASK_PUPPET:
+        summon = new Puppet(properties, summoner);
+        break;
+    case UNIT_MASK_TOTEM:
+        summon = new Totem(properties, summoner);
+        break;
+    case UNIT_MASK_MINION:
+        summon = new Minion(properties, summoner);
+        break;
+    default:
+        return NULL;
     }
 
     if (!summon->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), this, phase, entry, vehId, team, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation()))

@@ -441,8 +441,8 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
 {
     public:
 
-        explicit Creature(bool isWorldObject = false);
-        virtual ~Creature();
+		explicit Creature();
+		virtual ~Creature();
 
         void AddToWorld();
         void RemoveFromWorld();
@@ -521,8 +521,8 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
         void AI_SendMoveToPacket(float x, float y, float z, uint32 time, uint32 MovementFlags, uint8 type);
         CreatureAI* AI() const { return (CreatureAI*)i_AI; }
 
-		void SetWalk(bool enable);
-		void SetLevitate(bool enable);
+        void SetWalk(bool enable);
+        void SetLevitate(bool enable);
 
         uint32 GetShieldBlockValue() const                  //dunno mob block value
         {

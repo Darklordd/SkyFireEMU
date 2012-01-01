@@ -1833,14 +1833,14 @@ void Spell::SearchChainTarget(std::list<Unit*> &TagUnitMap, float max_range, uin
             if (cur->GetDistance(*next) > CHAIN_SPELL_JUMP_RADIUS)      // Don't search beyond the max jump radius
                 break;
 
-            // Check if (*next) is a valid chain target. If not, don't add to TagUnitMap, and repeat loop.
-            // If you want to add any conditions to exclude a target from TagUnitMap, add condition in this while () loop.
-            while ((m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE
-                && !m_caster->isInFrontInMap(*next, max_range))
-                || !m_caster->canSeeOrDetect(*next)
-                || !cur->IsWithinLOSInMap(*next)
-                || (*next)->GetCreatureType() == CREATURE_TYPE_CRITTER
-                || ((GetSpellInfo()->AttributesEx6 & SPELL_ATTR6_CANT_TARGET_CROWD_CONTROLLED) && !(*next)->CanFreeMove()))
+			// Check if (*next) is a valid chain target. If not, don't add to TagUnitMap, and repeat loop.
+			// If you want to add any conditions to exclude a target from TagUnitMap, add condition in this while () loop.
+			while ((m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE
+				&& !m_caster->isInFrontInMap(*next, max_range))
+				|| !m_caster->canSeeOrDetect(*next)
+				|| !cur->IsWithinLOSInMap(*next)
+				|| (*next)->GetCreatureType() == CREATURE_TYPE_CRITTER
+				|| ((GetSpellInfo()->AttributesEx6 & SPELL_ATTR6_CANT_TARGET_CROWD_CONTROLLED) && !(*next)->CanFreeMove()))
             {
                 ++next;
                 if (next == tempUnitMap.end() || cur->GetDistance(*next) > CHAIN_SPELL_JUMP_RADIUS) // Don't search beyond the max jump radius
