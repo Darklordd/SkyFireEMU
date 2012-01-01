@@ -274,11 +274,11 @@ void TempSummon::RemoveFromWorld()
 }
 
 Minion::Minion(SummonPropertiesEntry const* properties, Unit* owner) : TempSummon(properties, owner)
-	, m_owner(owner)
+, m_owner(owner)
 {
-	ASSERT(m_owner);
-	m_unitTypeMask |= UNIT_MASK_MINION;
-	m_followAngle = PET_FOLLOW_ANGLE;
+    ASSERT(m_owner);
+    m_unitTypeMask |= UNIT_MASK_MINION;
+    m_followAngle = PET_FOLLOW_ANGLE;
 }
 
 void Minion::InitStats(uint32 duration)

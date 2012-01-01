@@ -565,9 +565,9 @@ class FlaggedValuesArray32
 class WorldObject : public Object, public WorldLocation
 {
     protected:
-	    explicit WorldObject();
+        explicit WorldObject();
     public:
-	    virtual ~WorldObject();
+        virtual ~WorldObject();
 
         virtual void Update (uint32 /*time_diff*/) { }
 

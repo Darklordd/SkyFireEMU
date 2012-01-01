@@ -109,9 +109,9 @@ class Player;
 
 class Pet : public Guardian
 {
-	public:
-		explicit Pet(Player* owner, PetType type = MAX_PET_TYPE);
-		virtual ~Pet();
+    public:
+        explicit Pet(Player* owner, PetType type = MAX_PET_TYPE);
+        virtual ~Pet();
 
         void AddToWorld();
         void RemoveFromWorld();

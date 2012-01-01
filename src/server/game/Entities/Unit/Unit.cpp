@@ -162,8 +162,8 @@ m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), m
 #ifdef _MSC_VER
 #pragma warning(default:4355)
 #endif
-	m_objectType |= TYPEMASK_UNIT;
-	m_objectTypeId = TYPEID_UNIT;
+    m_objectType |= TYPEMASK_UNIT;
+    m_objectTypeId = TYPEID_UNIT;
 
     m_updateFlag = (UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION);
 
