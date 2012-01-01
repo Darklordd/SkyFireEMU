@@ -1047,7 +1047,7 @@ class boss_the_lich_king : public CreatureScript
                             break;
                         case EVENT_OUTRO_TALK_3:
                             if (Creature* tirion = ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_HIGHLORD_TIRION_FORDRING)))
-                                me->SetFacingTo(0.0f, tirion);
+                                me->SetFacingToObject(tirion);
                             Talk(SAY_LK_OUTRO_3);
                             break;
                         case EVENT_OUTRO_MOVE_CENTER:
@@ -1070,7 +1070,7 @@ class boss_the_lich_king : public CreatureScript
                         case EVENT_OUTRO_TALK_6:
                             Talk(SAY_LK_OUTRO_6);
                             if (Creature* tirion = ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_HIGHLORD_TIRION_FORDRING)))
-                                tirion->SetFacingTo(0.0f, me);
+                                tirion->SetFacingToObject(me);
                             me->ClearUnitState(UNIT_STAT_CASTING);
                             DoCastAOE(SPELL_SUMMON_BROKEN_FROSTMOURNE_3);
                             SetEquipmentSlots(false, EQUIP_UNEQUIP);
@@ -1285,7 +1285,7 @@ class npc_tirion_fordring_tft : public CreatureScript
                             SetEquipmentSlots(false, EQUIP_ASHBRINGER_GLOWING);
                             if (Creature* lichKing = ObjectAccessor::GetCreature(*me, _instance->GetData64(DATA_THE_LICH_KING)))
                             {
-                                me->SetFacingTo(0.0f, lichKing);
+                                me->SetFacingToObject(lichKing);
                                 lichKing->AI()->DoAction(ACTION_PLAY_MUSIC);
                             }
                             break;
@@ -1620,7 +1620,7 @@ class npc_strangulate_vehicle : public CreatureScript
 
             void IsSummonedBy(Unit* summoner)
             {
-                me->SetFacingTo(0.0f, summoner);
+                me->SetFacingToObject(summoner);
                 DoCast(summoner, SPELL_HARVEST_SOUL_VEHICLE);
                 _events.Reset();
                 _events.ScheduleEvent(EVENT_MOVE_TO_LICH_KING, 2000);
@@ -1787,7 +1787,7 @@ class npc_terenas_menethil : public CreatureScript
                 _events.Reset();
                 _events.SetPhase(PHASE_OUTRO);
                 if (Creature* lichKing = ObjectAccessor::GetCreature(*me, _instance->GetData64(DATA_THE_LICH_KING)))
-                    me->SetFacingTo(0.0f, lichKing);
+                    me->SetFacingToObject(lichKing);
 
                 _events.ScheduleEvent(EVENT_OUTRO_TERENAS_TALK_1, 2000, 0, PHASE_OUTRO);
                 _events.ScheduleEvent(EVENT_OUTRO_TERENAS_TALK_2, 14000, 0, PHASE_OUTRO);
@@ -3238,3 +3238,4 @@ void AddSC_boss_the_lich_king()
     new achievement_been_waiting_long_time();
     new achievement_neck_deep_in_vile();
 }
+
