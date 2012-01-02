@@ -773,7 +773,7 @@ enum Opcodes
     SMSG_RAID_INSTANCE_MESSAGE                       = 0x06680, // 4.0.6a 13623
     SMSG_COMPRESSED_MOVES                            = 0x06FE4, // 4.0.6a 13623
     CMSG_GUILD_INFO_TEXT                             = 0x0270D, // 4.0.6a 13623
-    SMSG_GUILD_PARTY_STATE_UPDATE                    = 0x0450C, // 4.0.6a 13623 structure: uint8(isGuildGroup << 7) uint32(numGuildRequired) uint32(numGuildPresent) float(xpMultiplier) NOTE: xpMultiplier/100.0f
+    SMSG_GUILD_PARTY_STATE_UPDATE                    = 0x0450C, // 4.0.6a 13623
     SMSG_CHAT_RESTRICTED                             = 0x03EC8, // 4.0.6a 13623
     SMSG_SPLINE_SET_RUN_SPEED                        = 0x0F9E8, // 4.0.6a 13623
     SMSG_SPLINE_SET_RUN_BACK_SPEED                   = 0x0E9C0, // 4.0.6a 13623
@@ -1206,8 +1206,8 @@ enum Opcodes
     SMSG_SERVER_INFO_RESPONSE                        = 0x101F7, // Unknown opcode ID
     CMSG_CHECK_LOGIN_CRITERIA                        = 0x101F8, // Unknown opcode ID
     SMSG_SERVER_BUCK_DATA_START                      = 0x101F9, // Unknown opcode ID
-    CMSG_QUERY_VEHICLE_STATUS                        = 0x101F0, // 4.0.6a 13623
-    SMSG_BATTLEGROUND_INFO_THROTTLED                 = 0x00093, // 4.0.6a 13623
+    CMSG_QUERY_VEHICLE_STATUS                        = 0x101F0, // 69A0 ????
+    SMSG_BATTLEGROUND_INFO_THROTTLED                 = 0x075C4, // 4.0.6a 13623
     SMSG_PLAYER_VEHICLE_DATA                         = 0x0A5A4, // 4.0.6a 13623
     CMSG_PLAYER_VEHICLE_ENTER                        = 0x0AEC8, // 4.0.6a 13623
     CMSG_EJECT_PASSENGER                             = 0x0F688, // 4.0.6a 13623
@@ -1237,8 +1237,8 @@ enum Opcodes
     SMSG_MOVE_GRAVITY_ENABLE                         = 0x1021B, // Unknown opcode ID
     CMSG_MOVE_GRAVITY_ENABLE_ACK                     = 0x07DE8, // 4.0.6a 13623
     SMSG_MOVE_LEVITATING                             = 0x0B8AC, // 4.0.6a 13623
-    SMSG_SPLINE_MOVE_UNKNOWN_1235                    = 0x1021E, // Unknown opcode ID
-    SMSG_SPLINE_MOVE_UNKNOWN_1236                    = 0x1022F, // 4.0.6a 13623
+    SMSG_SPLINE_MOVE_GRAVITY_DISABLE                 = 0x1021E, // Unknown opcode ID
+    SMSG_SPLINE_MOVE_GRAVITY_ENABLE                  = 0x1022F, // 4.0.6a 13623
     CMSG_EQUIPMENT_SET_USE                           = 0x0E8A0, // 4.0.6a 13623
     SMSG_EQUIPMENT_SET_USE_RESULT                    = 0x076AC, // 4.0.6a 13623
     SMSG_UNKNOWN_1240                                = 0x0B8E0, // 4.0.6a 13623
@@ -1323,7 +1323,6 @@ enum Opcodes
     SMSG_GUILD_ACHIEVEMENT_DATA                      = 0x0491E, // 4.0.6a 13623
     CMSG_UI_TIME_REQUEST                             = 0x03FA8, // 4.0.6a 13623
     SMSG_UI_TIME                                     = 0x0618C, // 4.0.6a 13623
-    CMSG_RETURN_TO_GRAVEYARD                         = 0x00593, // 4.0.6a 13623
     SMSG_UNKNOWN_1330                                = 0x0618C, // 4.0.6a 13623
     CMSG_REFORGE_ITEM                                = 0x00313, // 4.0.6a 13623
     CMSG_COMPLETED_ARTIFACTS                         = 0x00A13, // 4.0.6a 13623
@@ -1345,6 +1344,7 @@ enum Opcodes
     CMSG_GUILD_NEWS_SET_STICKY                       = 0x0252D, // 4.0.6a 13623
     SMSG_GUILD_CRITERIA_DELETED                      = 0x0000C, // 4.0.6a 13623
     SMSG_GUILD_CRITERIA_DATA                         = 0x0400E, // 4.0.6a 13623
+    CMSG_RETURN_TO_GRAVEYARD                         = 0x00593, // 4.0.6a 13623
     NUM_MSG_TYPES                                    = 0x102B8  // last unknown opcode + 1.
 };
 

@@ -594,7 +594,7 @@ void WorldSession::HandleSellItemOpcode(WorldPacket & recv_data)
 
                 uint32 money = pProto->SellPrice * count;
                 _player->ModifyMoney(money);
-                _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_MONEY_FROM_VENDORS, money);
+                _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_MONEY_FROM_VENDORS, money);
             }
             else
                 _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, creature, itemguid, 0);
@@ -642,7 +642,7 @@ void WorldSession::HandleBuybackItem(WorldPacket & recv_data)
             _player->ModifyMoney(-(int32)price);
             _player->RemoveItemFromBuyBackSlot(slot, false);
             _player->ItemAddedQuestCheck(pItem->GetEntry(), pItem->GetCount());
-            _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, pItem->GetEntry(), pItem->GetCount());
+            _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, pItem->GetEntry(), pItem->GetCount());
             _player->StoreItem(dest, pItem, true);
         }
         else
@@ -697,26 +697,26 @@ void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket & recv_data)
 
 void WorldSession::HandleBuyItemOpcode(WorldPacket & recv_data)
 {
-	sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_BUY_ITEM");
-	uint64 vendorguid;
-	uint8 unk;
-	uint32 item, slot, count;
-	uint64 unk1;
-	uint8 unk2;
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_BUY_ITEM");
+    uint64 vendorguid;
+    uint8 unk;
+    uint32 item, slot, count;
+    uint64 unk1;
+    uint8 unk2;
 
-	recv_data >> vendorguid;
-	recv_data >> unk;                                       // 4.0.6
-	recv_data >> item >> slot >> count;
-	recv_data >> unk1;                                      // 4.0.6
-	recv_data >> unk2;
+    recv_data >> vendorguid;
+    recv_data >> unk;                                       // 4.0.6
+    recv_data >> item >> slot >> count;
+    recv_data >> unk1;                                      // 4.0.6
+    recv_data >> unk2;
 
-	// client expects count starting at 1, and we send vendorslot+1 to client already
-	if (slot > 0)
-		--slot;
-	else
-		return; // cheating
+    // client expects count starting at 1, and we send vendorslot+1 to client already
+    if (slot > 0)
+        --slot;
+    else
+        return; // cheating
 
-	GetPlayer()->BuyItemFromVendorSlot(vendorguid, slot, item, count, NULL_BAG, NULL_SLOT);
+    GetPlayer()->BuyItemFromVendorSlot(vendorguid, slot, item, count, NULL_BAG, NULL_SLOT);
 }
 
 void WorldSession::HandleListInventoryOpcode(WorldPacket & recv_data)
@@ -788,6 +788,26 @@ void WorldSession::SendListInventory(uint64 vendorGuid)
                 if (!_player->isGameMaster() && ((itemTemplate->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY && _player->GetTeam() == ALLIANCE) || (itemTemplate->Flags2 == ITEM_FLAGS_EXTRA_ALLIANCE_ONLY && _player->GetTeam() == HORDE)))
                     continue;
 
+                // If the item is a guild reward, dont display it if the player does not fit the requirements
+                // ToDo: Theese items must have a flag, find it
+                if(QueryResult res = WorldDatabase.PQuery("SELECT achievement, standing FROM guild_rewards WHERE item_entry = %u", item->item))
+                {
+                    Guild* guild = sGuildMgr->GetGuildById(_player->GetGuildId());
+                    if(!guild)
+                        continue;
+                    Field *fields = res->Fetch();
+
+                    // Check for achievement
+                    if(!guild->GetAchievementMgr().HasAchieved(fields[0].GetUInt32()))
+                        continue;
+
+                    // Check for standing
+                    uint32 repReq = fields[1].GetUInt32();
+                    if(repReq)
+                        if(ReputationRank(repReq) > _player->GetReputationRank(1168)) // Does not have enough reputation
+                            continue;
+                }
+                
                 // Items sold out are not displayed in list
                 uint32 leftInStock = !item->maxcount ? 0xFFFFFFFF : vendor->GetVendorItemCurrentCount(item);
                 if (!_player->isGameMaster() && !leftInStock)
@@ -927,7 +947,7 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
      data << uint32(ERR_BANKSLOT_OK);
      SendPacket(&data);
 
-    _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BUY_BANK_SLOT);
+    _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BUY_BANK_SLOT);
 }
 
 void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)
@@ -1045,26 +1065,26 @@ void WorldSession::SendItemEnchantTimeUpdate(uint64 Playerguid, uint64 Itemguid,
 
 void WorldSession::HandleItemNameQueryOpcode(WorldPacket & recv_data)
 {
-   uint32 itemid;
-   recv_data >> itemid;
-   recv_data.read_skip<uint64>();                          // guid
+    uint32 itemid;
+    recv_data >> itemid;
+    recv_data.read_skip<uint64>();                          // guid
 
-   sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: CMSG_ITEM_NAME_QUERY %u", itemid);
-   ItemSetNameEntry const *pName = sObjectMgr->GetItemSetNameEntry(itemid);
-   if (pName)
-   {
-       std::string Name = pName->name;
-       int loc_idx = GetSessionDbLocaleIndex();
-       if (loc_idx >= 0)
-           if (ItemSetNameLocale const *isnl = sObjectMgr->GetItemSetNameLocale(itemid))
-               ObjectMgr::GetLocaleString(isnl->Name, loc_idx, Name);
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: CMSG_ITEM_NAME_QUERY %u", itemid);
+    ItemSetNameEntry const *pName = sObjectMgr->GetItemSetNameEntry(itemid);
+    if (pName)
+    {
+        std::string Name = pName->name;
+        int loc_idx = GetSessionDbLocaleIndex();
+        if (loc_idx >= 0)
+            if (ItemSetNameLocale const *isnl = sObjectMgr->GetItemSetNameLocale(itemid))
+                ObjectMgr::GetLocaleString(isnl->Name, loc_idx, Name);
 
-       WorldPacket data(SMSG_ITEM_NAME_QUERY_RESPONSE, (4+Name.size()+1+4));
-       data << uint32(itemid);
-       data << Name;
-       data << uint32(pName->InventoryType);
-       SendPacket(&data);
-   }
+        WorldPacket data(SMSG_ITEM_NAME_QUERY_RESPONSE, (4+Name.size()+1+4));
+        data << uint32(itemid);
+        data << Name;
+        data << uint32(pName->InventoryType);
+        SendPacket(&data);
+    }
 }
 
 void WorldSession::HandleWrapItemOpcode(WorldPacket& recv_data)
@@ -1451,44 +1471,44 @@ void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
 
 void WorldSession::HandleReforgeItem(WorldPacket& recv_data)
 {
-   sLog->outDebug(LOG_FILTER_NETWORKIO, "CMSG_REFORGE_ITEM");
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "CMSG_REFORGE_ITEM");
 
-   uint32 slotId, reforgeId;
-   uint64 GUID;
-   uint32 bag;
-   recv_data >> slotId >> reforgeId;
-   recv_data >> GUID >> bag;
+    uint32 slotId, reforgeId;
+    uint64 GUID;
+    uint32 bag;
+    recv_data >> slotId >> reforgeId;
+    recv_data >> GUID >> bag;
 
-   Item* item = GetPlayer()->GetItemByPos(bag,slotId);
+    Item* item = GetPlayer()->GetItemByPos(bag,slotId);
 
-   if(!item)       // cheating?
-       return;
+    if(!item)       // cheating?
+        return;
 
-   item->SetState(ITEM_CHANGED,GetPlayer()); // Set the 'changed' state to allow items to be saved to DB if they are equipped
-   if(reforgeId == 0) // Reset item
-   {
-       if(item->IsEquipped()) // Item must be equipped to avoid additional stat loose
-           GetPlayer()->ApplyReforgedStats(item,false);
-       item->SetEnchantment(REFORGE_ENCHANTMENT_SLOT, 0, 0, 0);
-       SQLTransaction trans = CharacterDatabase.BeginTransaction();
-       item->SaveToDB(trans);
-       CharacterDatabase.CommitTransaction(trans);
-   }
+    item->SetState(ITEM_CHANGED,GetPlayer()); // Set the 'changed' state to allow items to be saved to DB if they are equipped
+    if(reforgeId == 0) // Reset item
+    {
+        if(item->IsEquipped()) // Item must be equipped to avoid additional stat loose
+            GetPlayer()->ApplyReforgedStats(item,false);
+        item->SetEnchantment(REFORGE_ENCHANTMENT_SLOT, 0, 0, 0);
+        SQLTransaction trans = CharacterDatabase.BeginTransaction();
+        item->SaveToDB(trans);
+        CharacterDatabase.CommitTransaction(trans);
+    }
 
-   const ItemReforgeEntry* stats = sItemReforgeStore.LookupEntry(reforgeId);
-   if(!stats)        // cheating?
-       return;
+    const ItemReforgeEntry* stats = sItemReforgeStore.LookupEntry(reforgeId);
+    if(!stats)        // cheating?
+        return;
 
-   uint32 money = item->GetTemplate()->SellPrice;
+    uint32 money = item->GetTemplate()->SellPrice;
 
-   if(!GetPlayer()->HasEnoughMoney((int32)money))
-       return; // Cheating?
+    if(!GetPlayer()->HasEnoughMoney((int32)money))
+        return; // Cheating?
 
-   GetPlayer()->ModifyMoney(-int32(money));
-   item->SetEnchantment(REFORGE_ENCHANTMENT_SLOT,reforgeId, 0, 0);
-   SQLTransaction trans = CharacterDatabase.BeginTransaction();
-   item->SaveToDB(trans);
-   CharacterDatabase.CommitTransaction(trans);
-   if(item->IsEquipped()) // Item must be equipped to get the new stats
-       GetPlayer()->ApplyReforgedStats(item,true);
+    GetPlayer()->ModifyMoney(-int32(money));
+    item->SetEnchantment(REFORGE_ENCHANTMENT_SLOT,reforgeId, 0, 0);
+    SQLTransaction trans = CharacterDatabase.BeginTransaction();
+    item->SaveToDB(trans);
+    CharacterDatabase.CommitTransaction(trans);
+    if(item->IsEquipped()) // Item must be equipped to get the new stats
+        GetPlayer()->ApplyReforgedStats(item,true);
 }

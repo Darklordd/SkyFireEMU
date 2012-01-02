@@ -75,6 +75,8 @@ struct map_fileheader
     uint32 heightMapSize;
     uint32 liquidMapOffset;
     uint32 liquidMapSize;
+    uint32 holesOffset;
+    uint32 holesSize;
 };
 
 #define MAP_AREA_NO_AREA      0x0001
@@ -406,7 +408,7 @@ class Map : public GridRefManager<NGridType>
 
         void RemoveFromActive(Creature* obj);
 
-        template<class T> void SwitchGridContainers(T* obj, bool active);
+        void SwitchGridContainers(Creature* creature, bool toWorldContainer);
         template<class NOTIFIER> void VisitAll(const float &x, const float &y, float radius, NOTIFIER &notifier);
         template<class NOTIFIER> void VisitFirstFound(const float &x, const float &y, float radius, NOTIFIER &notifier);
         template<class NOTIFIER> void VisitWorld(const float &x, const float &y, float radius, NOTIFIER &notifier);
@@ -425,6 +427,7 @@ class Map : public GridRefManager<NGridType>
 
         InstanceMap* ToInstanceMap(){ if (IsDungeon())  return reinterpret_cast<InstanceMap*>(this); else return NULL;  }
         const InstanceMap* ToInstanceMap() const { if (IsDungeon())  return (const InstanceMap*)((InstanceMap*)this); else return NULL;  }
+        float GetWaterOrGroundLevel(float x, float y, float z, float* pGround = NULL, bool swim = false) const;
     private:
         void LoadMapAndVMap(int gx, int gy);
         void LoadVMap(int gx, int gy);

@@ -1629,17 +1629,6 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                         if(m_caster->HasAura(48265) || m_caster->HasAura(48266)) // Only in frost/unholy presence
                             bp = m_caster->CountPctFromMaxHealth(aurEff->GetAmount());
 
-                if (m_caster->ToPlayer()->HasAuraType(SPELL_AURA_MASTERY))
-                {
-                    if (m_caster->ToPlayer()->HasSpell(50029)) //Temp check for spec
-                    {
-                        if (m_caster->HasAura(48263))
-                        {
-                            int32 shield = int32(bp * (50.0f + (6.25f * m_caster->ToPlayer()->GetMasteryPoints())) / 100.0f);
-                            m_caster->CastCustomSpell(m_caster, 77535, &shield, NULL, NULL, false);
-                        }
-                    }
-                }
                 m_caster->CastCustomSpell(m_caster, 45470, &bp, NULL, NULL, false);
                 return;
             }
@@ -2330,19 +2319,9 @@ void Spell::EffectSendEvent(SpellEffIndex effIndex)
         && effectHandleMode != SPELL_EFFECT_HANDLE_HIT)
         return;
 
-    //! it's possible for spells with this spell effect to either have a target or no target
-    //! in case of a target, we will execute this handler on SPELL_EFFECT_HANDLE_HIT_TARGET
-    //! with all relevant variables, and we will skip SPELL_EFFECT_HANDLE_HIT
-    if (effectHandleMode == SPELL_EFFECT_HANDLE_HIT)
-    {
-        if (GetSpellInfo()->Effects[effIndex].TargetA.GetTarget() != 0 ||
-            GetSpellInfo()->Effects[effIndex].TargetB.GetTarget() != 0)
-            return;
-    }
-
     WorldObject* target = NULL;
 
-    // call events for target if present
+    // call events for object target if present
     if (effectHandleMode == SPELL_EFFECT_HANDLE_HIT_TARGET)
     {
         if (unitTarget)
@@ -2350,9 +2329,15 @@ void Spell::EffectSendEvent(SpellEffIndex effIndex)
         else if (gameObjTarget)
             target = gameObjTarget;
     }
-    // call event with no target or focus target when no targets could be found due to no dbc entry
-    else if (!m_spellInfo->Effects[effIndex].GetProvidedTargetMask())
+    else // if (effectHandleMode == SPELL_EFFECT_HANDLE_HIT)
     {
+        // let's prevent executing effect handler twice in case when spell effect is capable of targeting an object
+        // this check was requested by scripters, but it has some downsides:
+        // now it's impossible to script (using sEventScripts) a cast which misses all targets
+        // or to have an ability to script the moment spell hits dest (in a case when there are object targets present)
+        if (m_spellInfo->Effects[effIndex].GetProvidedTargetMask() & (TARGET_FLAG_UNIT_MASK | TARGET_FLAG_GAMEOBJECT_MASK))
+            return;
+        // some spells have no target entries in dbc and they use focus target
         if (focusObject)
             target = focusObject;
         // TODO: there should be a possibility to pass dest target to event script
@@ -2435,19 +2420,6 @@ void Spell::SpellDamageHeal(SpellEffIndex effIndex)
             {
                 damageAmount+= aurEff->GetAmount();
                 m_caster->RemoveAurasDueToSpell(45062);
-            }
-        }
-
-        //Echo of Light
-        if (m_caster->getClass() == CLASS_PRIEST)
-        {
-            if (m_caster->HasAuraType(SPELL_AURA_MASTERY))
-            {
-                if (m_caster->ToPlayer()->GetTalentBranchSpec(m_caster->ToPlayer()->GetActiveSpec()) == BS_PRIEST_HOLY)
-                {
-                    int32 bp0 = int32 (addhealth * (10.0f + (1.25f * m_caster->ToPlayer()->GetMasteryPoints())) / 100);
-                    m_caster->CastCustomSpell(m_caster, 77489, &bp0, NULL, NULL, true);
-                }
             }
         }
 
@@ -2798,8 +2770,9 @@ void Spell::EffectPersistentAA(SpellEffIndex effIndex)
         // Caster not in world, might be spell triggered from aura removal
         if (!caster->IsInWorld())
             return;
+
         DynamicObject* dynObj = new DynamicObject();
-        if (!dynObj->CreateDynamicObject(sObjectMgr->GenerateLowGuid(HIGHGUID_DYNAMICOBJECT), caster, m_spellInfo->Id, *m_targets.GetDst(), radius, false, DYNAMIC_OBJECT_AREA_SPELL))
+        if (!dynObj->CreateDynamicObject(sObjectMgr->GenerateLowGuid(HIGHGUID_DYNAMICOBJECT), m_caster, m_spellInfo->Id, *m_targets.GetDst(), radius, true, DYNAMIC_OBJECT_FARSIGHT_FOCUS))
         {
             delete dynObj;
             return;
@@ -3600,22 +3573,11 @@ void Spell::EffectDistract(SpellEffIndex /*effIndex*/)
     if (unitTarget->HasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_STUNNED | UNIT_STAT_FLEEING))
         return;
 
-    float angle = unitTarget->GetAngle(m_targets.GetDst());
+    unitTarget->SetFacingTo(unitTarget->GetAngle(m_targets.GetDst()));
+    unitTarget->ClearUnitState(UNIT_STAT_MOVING);
 
-    if (unitTarget->GetTypeId() == TYPEID_PLAYER)
-    {
-        // For players just turn them
-        unitTarget->ToPlayer()->UpdatePosition(unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), angle, false);
-        unitTarget->ToPlayer()->SendTeleportAckPacket();
-    }
-    else
-    {
-        // Set creature Distracted, Stop it, And turn it
-        unitTarget->SetOrientation(angle);
-        unitTarget->StopMoving();
+    if (unitTarget->GetTypeId() == TYPEID_UNIT)
         unitTarget->GetMotionMaster()->MoveDistract(damage * IN_MILLISECONDS);
-        unitTarget->SendMovementFlagUpdate();
-    }
 }
 
 void Spell::EffectPickPocket(SpellEffIndex /*effIndex*/)
@@ -5538,16 +5500,6 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                 case 61177:                                 // Northrend Inscription Research
                 case 61288:                                 // Minor Inscription Research
                 case 61756:                                 // Northrend Inscription Research (FAST QA VERSION)
-                case 64323:                                 // Book of Glyph Mastery
-                {
-                    if (m_caster->GetTypeId() != TYPEID_PLAYER)
-                        return;
-
-                    // learn random explicit discovery recipe (if any)
-                    if (uint32 discoveredSpell = GetExplicitDiscoverySpell(m_spellInfo->Id, m_caster->ToPlayer()))
-                        m_caster->ToPlayer()->learnSpell(discoveredSpell, false);
-                    return;
-                }
                 case 62482: // Grab Crate
                 {
                     if (unitTarget)

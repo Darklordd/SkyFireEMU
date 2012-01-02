@@ -28,8 +28,7 @@
 #include "GridNotifiersImpl.h"
 #include "ScriptMgr.h"
 
-DynamicObject::DynamicObject() : WorldObject(),
-    _aura(NULL), _removedAura(NULL), _caster(NULL), _duration(0), _isViewpoint(false)
+DynamicObject::DynamicObject() : WorldObject(), _aura(NULL), _removedAura(NULL), _caster(NULL), _duration(0), _isViewpoint(false)
 {
     m_objectType |= TYPEMASK_DYNAMICOBJECT;
     m_objectTypeId = TYPEID_DYNAMICOBJECT;
@@ -106,8 +105,7 @@ bool DynamicObject::CreateDynamicObject(uint32 guidlow, Unit* caster, uint32 spe
     SetFloatValue(DYNAMICOBJECT_RADIUS, radius);
     SetUInt32Value(DYNAMICOBJECT_CASTTIME, getMSTime());
 
-    m_isWorldObject = active;
-    if (active)
+    if (IsWorldObject())
         setActive(true);    //must before add to map to be put in world container
 
     if (!GetMap()->AddToMap(this))

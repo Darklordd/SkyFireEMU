@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
@@ -44,8 +43,6 @@ class MovementGenerator
         virtual MovementGeneratorType GetMovementGeneratorType() = 0;
 
         virtual void unitSpeedChanged() { }
-
-        virtual bool GetDestination(float& /*x*/, float& /*y*/, float& /*z*/) const { return false; }
 };
 
 template<class T, class D>
@@ -97,3 +94,4 @@ typedef FactoryHolder<MovementGenerator, MovementGeneratorType> MovementGenerato
 typedef FactoryHolder<MovementGenerator, MovementGeneratorType>::FactoryHolderRegistry MovementGeneratorRegistry;
 typedef FactoryHolder<MovementGenerator, MovementGeneratorType>::FactoryHolderRepository MovementGeneratorRepository;
 #endif
+

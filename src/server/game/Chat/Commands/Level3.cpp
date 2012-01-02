@@ -2178,28 +2178,33 @@ bool ChatHandler::HandleHoverCommand(const char *args)
     return true;
 }
 
-void ChatHandler::HandleCharacterLevel(Player* player, uint64 player_guid, uint32 oldlevel, uint32 newlevel)
+void ChatHandler::HandleCharacterLevel(Player* player, uint64 playerGuid, uint32 oldLevel, uint32 newLevel)
 {
     if (player)
     {
-        player->GiveLevel(newlevel);
+        player->GiveLevel(newLevel);
         player->InitTalentForLevel();
         player->SetUInt32Value(PLAYER_XP, 0);
 
         if (needReportToTarget(player))
         {
-            if (oldlevel == newlevel)
+            if (oldLevel == newLevel)
                 ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_PROGRESS_RESET, GetNameLink().c_str());
-            else if (oldlevel < newlevel)
-                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_UP, GetNameLink().c_str(), newlevel);
+            else if (oldLevel < newLevel)
+                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_UP, GetNameLink().c_str(), newLevel);
             else                                                // if (oldlevel > newlevel)
-                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, GetNameLink().c_str(), newlevel);
+                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, GetNameLink().c_str(), newLevel);
         }
     }
     else
     {
-        // update level and XP at level, all other will be updated at loading
-        CharacterDatabase.PExecute("UPDATE characters SET level = '%u', xp = 0 WHERE guid = '%u'", newlevel, GUID_LOPART(player_guid));
+        // Update level and reset XP, everything else will be updated at login
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_LEVEL);
+
+        stmt->setUInt8(0, uint8(newLevel));
+        stmt->setUInt32(1, GUID_LOPART(playerGuid));
+
+        CharacterDatabase.Execute(stmt);
     }
 }
 
@@ -2563,12 +2568,12 @@ bool ChatHandler::HandleResetStatsCommand(const char * args)
     return true;
 }
 
-bool ChatHandler::HandleResetSpellsCommand(const char * args)
+bool ChatHandler::HandleResetSpellsCommand(const char* args)
 {
     Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if (!extractPlayerTarget((char*)args, &target, &target_guid, &target_name))
+    uint64 targetGuid;
+    std::string targetName;
+    if (!extractPlayerTarget((char*)args, &target, &targetGuid, &targetName))
         return false;
 
     if (target)
@@ -2581,19 +2586,25 @@ bool ChatHandler::HandleResetSpellsCommand(const char * args)
     }
     else
     {
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid = '%u'", uint32(AT_LOGIN_RESET_SPELLS), GUID_LOPART(target_guid));
-        PSendSysMessage(LANG_RESET_SPELLS_OFFLINE, target_name.c_str());
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_AT_LOGIN_FLAG);
+
+        stmt->setUInt16(0, uint16(AT_LOGIN_RESET_SPELLS));
+        stmt->setUInt32(1, GUID_LOPART(targetGuid));
+
+        CharacterDatabase.Execute(stmt);
+
+        PSendSysMessage(LANG_RESET_SPELLS_OFFLINE, targetName.c_str());
     }
 
     return true;
 }
 
-bool ChatHandler::HandleResetTalentsCommand(const char * args)
+bool ChatHandler::HandleResetTalentsCommand(const char* args)
 {
     Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if (!extractPlayerTarget((char*)args, &target, &target_guid, &target_name))
+    uint64 targetGuid;
+    std::string targetName;
+    if (!extractPlayerTarget((char*)args, &target, &targetGuid, &targetName))
     {
         // Try reset talents as Hunter Pet
         Creature* creature = getSelectedCreature();
@@ -2631,11 +2642,16 @@ bool ChatHandler::HandleResetTalentsCommand(const char * args)
             target->SendTalentsInfoData(true);
         return true;
     }
-    else if (target_guid)
+    else if (targetGuid)
     {
-        uint32 at_flags = AT_LOGIN_NONE | AT_LOGIN_RESET_PET_TALENTS;
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid = '%u'", at_flags, GUID_LOPART(target_guid));
-        std::string nameLink = playerLink(target_name);
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_AT_LOGIN_FLAG);
+
+        stmt->setUInt16(0, uint16(AT_LOGIN_NONE | AT_LOGIN_RESET_PET_TALENTS));
+        stmt->setUInt32(1, GUID_LOPART(targetGuid));
+
+        CharacterDatabase.Execute(stmt);
+
+        std::string nameLink = playerLink(targetName);
         PSendSysMessage(LANG_RESET_TALENTS_OFFLINE, nameLink.c_str());
         return true;
     }
@@ -2676,7 +2692,11 @@ bool ChatHandler::HandleResetAllCommand(const char * args)
         return false;
     }
 
-    CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE (at_login & '%u') = '0'", atLogin, atLogin);
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_ALL_AT_LOGIN_FLAGS);
+
+    stmt->setUInt16(0, uint16(atLogin));
+
+    CharacterDatabase.Execute(stmt);
 
     TRINITY_READ_GUARD(HashMapHolder<Player>::LockType, *HashMapHolder<Player>::GetLock());
     HashMapHolder<Player>::MapType const& plist = sObjectAccessor->GetPlayers();
@@ -3281,7 +3301,8 @@ bool ChatHandler::HandleBanListCharacterCommand(const char *args)
 
 bool ChatHandler::HandleBanListAccountCommand(const char *args)
 {
-    LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate <= UNIX_TIMESTAMP() AND unbandate<>bandate");
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_OLD_BANS);
+    LoginDatabase.Execute(stmt);
 
     char* cFilter = strtok((char*)args, " ");
     std::string filter = cFilter ? cFilter : "";
@@ -3386,7 +3407,8 @@ bool ChatHandler::HandleBanListHelper(QueryResult result)
 
 bool ChatHandler::HandleBanListIPCommand(const char *args)
 {
-    LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate <= UNIX_TIMESTAMP() AND unbandate<>bandate");
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_OLD_IP_BANS);
+    LoginDatabase.Execute(stmt);
 
     char* cFilter = strtok((char*)args, " ");
     std::string filter = cFilter ? cFilter : "";
@@ -3660,80 +3682,92 @@ bool ChatHandler::HandlePDumpWriteCommand(const char *args)
 
 bool ChatHandler::HandleMovegensCommand(const char* /*args*/)
 {
-    Unit* unit = getSelectedUnit();
-    if (!unit)
-    {
-        SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
-        SetSentErrorMessage(true);
-        return false;
-    }
+	Unit* unit = getSelectedUnit();
+	if (!unit)
+	{
+		SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
+		SetSentErrorMessage(true);
+		return false;
+	}
 
-    PSendSysMessage(LANG_MOVEGENS_LIST, (unit->GetTypeId() == TYPEID_PLAYER ? "Player" : "Creature"), unit->GetGUIDLow());
+	PSendSysMessage(LANG_MOVEGENS_LIST, (unit->GetTypeId() == TYPEID_PLAYER ? "Player" : "Creature"), unit->GetGUIDLow());
 
-    MotionMaster* mm = unit->GetMotionMaster();
-    for (uint8 i = 0; i < MAX_MOTION_SLOT; ++i)
-    {
-        MovementGenerator* mg = mm->GetMotionSlot(i);
-        if (!mg)
-        {
-            SendSysMessage("Empty");
-            continue;
-        }
-        switch (mg->GetMovementGeneratorType())
-        {
-            case IDLE_MOTION_TYPE:          SendSysMessage(LANG_MOVEGENS_IDLE);          break;
-            case RANDOM_MOTION_TYPE:        SendSysMessage(LANG_MOVEGENS_RANDOM);        break;
-            case WAYPOINT_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_WAYPOINT);      break;
-            case ANIMAL_RANDOM_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_ANIMAL_RANDOM); break;
-            case CONFUSED_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_CONFUSED);      break;
-            case TARGETED_MOTION_TYPE:
-            {
-                if (unit->GetTypeId() == TYPEID_PLAYER)
-                {
-                    TargetedMovementGenerator<Player> const* mgen = static_cast<TargetedMovementGenerator<Player> const*>(mg);
-                    Unit* target = mgen->GetTarget();
-                    if (target)
-                        PSendSysMessage(LANG_MOVEGENS_TARGETED_PLAYER, target->GetName(), target->GetGUIDLow());
-                    else
-                        SendSysMessage(LANG_MOVEGENS_TARGETED_NULL);
-                }
-                else
-                {
-                    TargetedMovementGenerator<Creature> const* mgen = static_cast<TargetedMovementGenerator<Creature> const*>(mg);
-                    Unit* target = mgen->GetTarget();
-                    if (target)
-                        PSendSysMessage(LANG_MOVEGENS_TARGETED_CREATURE, target->GetName(), target->GetGUIDLow());
-                    else
-                        SendSysMessage(LANG_MOVEGENS_TARGETED_NULL);
-                }
-                break;
-            }
-            case HOME_MOTION_TYPE:
-                if (unit->GetTypeId() == TYPEID_UNIT)
-                {
-                    float x, y, z;
-                    mg->GetDestination(x, y, z);
-                    PSendSysMessage(LANG_MOVEGENS_HOME_CREATURE, x, y, z);
-                }
-                else
-                    SendSysMessage(LANG_MOVEGENS_HOME_PLAYER);
-                break;
-            case FLIGHT_MOTION_TYPE:   SendSysMessage(LANG_MOVEGENS_FLIGHT);  break;
-            case POINT_MOTION_TYPE:
-            {
-                float x, y, z;
-                mg->GetDestination(x, y, z);
-                PSendSysMessage(LANG_MOVEGENS_POINT, x, y, z);
-                break;
-            }
-            case FLEEING_MOTION_TYPE:  SendSysMessage(LANG_MOVEGENS_FEAR);    break;
-            case DISTRACT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_DISTRACT);  break;
-            default:
-                PSendSysMessage(LANG_MOVEGENS_UNKNOWN, mg->GetMovementGeneratorType());
-                break;
-        }
-    }
-    return true;
+	MotionMaster* mm = unit->GetMotionMaster();
+	float x,y,z;
+	mm->GetDestination(x,y,z);
+
+	for (uint8 i = 0; i < MAX_MOTION_SLOT; ++i)
+	{
+		MovementGenerator* mg = mm->GetMotionSlot(i);
+		if (!mg)
+		{
+			SendSysMessage("Empty");
+			continue;
+		}
+		switch (mg->GetMovementGeneratorType())
+		{
+		case IDLE_MOTION_TYPE:          SendSysMessage(LANG_MOVEGENS_IDLE);          break;
+		case RANDOM_MOTION_TYPE:        SendSysMessage(LANG_MOVEGENS_RANDOM);        break;
+		case WAYPOINT_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_WAYPOINT);      break;
+		case ANIMAL_RANDOM_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_ANIMAL_RANDOM); break;
+		case CONFUSED_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_CONFUSED);      break;
+		case CHASE_MOTION_TYPE:
+			{
+				Unit* target = NULL;
+				if (unit->GetTypeId() == TYPEID_PLAYER)
+				{
+					target = static_cast<ChaseMovementGenerator<Player> const*>(mg)->GetTarget();
+				}
+				else
+					target = static_cast<ChaseMovementGenerator<Creature> const*>(mg)->GetTarget();
+
+				if (!target)
+					SendSysMessage(LANG_MOVEGENS_CHASE_NULL);
+				else if (target->GetTypeId()==TYPEID_PLAYER)
+					PSendSysMessage(LANG_MOVEGENS_CHASE_PLAYER,target->GetName(),target->GetGUIDLow());
+				else
+					PSendSysMessage(LANG_MOVEGENS_CHASE_CREATURE,target->GetName(),target->GetGUIDLow());
+				break;
+			}
+		case FOLLOW_MOTION_TYPE:
+			{
+				Unit* target = NULL;
+				if(unit->GetTypeId()==TYPEID_PLAYER)
+					target = static_cast<FollowMovementGenerator<Player> const*>(mg)->GetTarget();
+				else
+					target = static_cast<FollowMovementGenerator<Creature> const*>(mg)->GetTarget();
+
+				if (!target)
+					SendSysMessage(LANG_MOVEGENS_FOLLOW_NULL);
+				else if (target->GetTypeId()==TYPEID_PLAYER)
+					PSendSysMessage(LANG_MOVEGENS_FOLLOW_PLAYER,target->GetName(),target->GetGUIDLow());
+				else
+					PSendSysMessage(LANG_MOVEGENS_FOLLOW_CREATURE,target->GetName(),target->GetGUIDLow());
+				break;
+			}
+		case HOME_MOTION_TYPE:
+			if (unit->GetTypeId() == TYPEID_UNIT)
+			{
+				PSendSysMessage(LANG_MOVEGENS_HOME_CREATURE, x, y, z);
+			}
+			else
+				SendSysMessage(LANG_MOVEGENS_HOME_PLAYER);
+			break;
+		case FLIGHT_MOTION_TYPE:   SendSysMessage(LANG_MOVEGENS_FLIGHT);  break;
+		case POINT_MOTION_TYPE:
+			{
+				PSendSysMessage(LANG_MOVEGENS_POINT, x, y, z);
+				break;
+			}
+		case FLEEING_MOTION_TYPE:  SendSysMessage(LANG_MOVEGENS_FEAR);    break;
+		case DISTRACT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_DISTRACT);  break;
+		case EFFECT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_EFFECT);  break;
+		default:
+			PSendSysMessage(LANG_MOVEGENS_UNKNOWN, mg->GetMovementGeneratorType());
+			break;
+		}
+	}
+	return true;
 }
 
 bool ChatHandler::HandleServerPLimitCommand(const char *args)

@@ -1,7 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -148,8 +147,6 @@ namespace VMAP
            // we can only determine liquid height in LOCAL z-direction (heightmap data),
            // so with increasing tilt, liquid calculation gets increasingly wrong...not my fault, really :p
            liqHeight = (zLevel - pModel.z) * iScale + p.z;
-
-            return true;
         }
         return false;
     }

@@ -1,7 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -37,7 +36,7 @@ namespace VMAP
     class MeshTriangle
     {
         public:
-            MeshTriangle() {};
+            MeshTriangle(){};
             MeshTriangle(uint32 na, uint32 nb, uint32 nc): idx0(na), idx1(nb), idx2(nc) {};
 
             uint32 idx0;
@@ -67,6 +66,8 @@ namespace VMAP
             uint32 iType;    //!< liquid type
             float *iHeight;  //!< (tilesX + 1)*(tilesY + 1) height values
             uint8 *iFlags;   //!< info if liquid tile is used
+        public:
+            void getPosInfo(uint32 &tilesX, uint32 &tilesY, Vector3 &corner) const;
     };
 
     /*! holding additional info for WMO group files */
@@ -99,6 +100,8 @@ namespace VMAP
             std::vector<MeshTriangle> triangles;
             BIH meshTree;
             WmoLiquid* iLiquid;
+        public:
+            void getMeshData(std::vector<Vector3> &vertices, std::vector<MeshTriangle> &triangles, WmoLiquid* &liquid);
     };
     /*! Holds a model (converted M2 or WMO) in its original coordinate space */
     class WorldModel
@@ -118,6 +121,8 @@ namespace VMAP
             uint32 RootWMOID;
             std::vector<GroupModel> groupModels;
             BIH groupTree;
+        public:
+            void getGroupModels(std::vector<GroupModel> &groupModels);
     };
 } // namespace VMAP
 

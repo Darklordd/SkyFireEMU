@@ -2970,43 +2970,13 @@ void SpellMgr::LoadSpellCustomAttr()
 
         switch (spellInfo->Id)
         {
-            case 86914: // Firestarter
-                spellInfo->Effects[0].BasePoints = 0;
-                spellInfo->Effects[0].MiscValue = 0;
+            case 76547: // Mana Adept
+            case 77226: // Deep Healing
+            case 76613: // Frostburn
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_ADD_PCT_MODIFIER;
                 break;
             case 93072: // Bring our Boys back
                 spellInfo->Effects[0].TargetA = TARGET_UNIT_NEARBY_ENTRY;
-                break;
-            case 77515: // Mastery: Dreadblade
-                spellInfo->Effects[0].BasePoints = 20;
-                break;
-            case 77514: // Mastery: Frozen Heart
-                spellInfo->Effects[0].BasePoints = 16;
-                break;
-            case 77493: // Mastery: Razor Claws
-                spellInfo->Effects[0].BasePoints = 25;
-                break;
-            case 76658: // Mastery: Essence of the Viper
-                spellInfo->Effects[0].BasePoints = 8;
-                break;
-            case 76657: // Mastery: Master of Beasts
-                spellInfo->Effects[0].BasePoints = 13;
-                break;
-            case 76595: // Mastery: Flashburn
-                spellInfo->Effects[0].BasePoints = 22;
-                break;
-            case 76671: // Mastery: Divine Bulwark
-                spellInfo->Effects[0].BasePoints = 18;
-                break;
-            case 77220: // Mastery: Fiery Apocalypse
-                spellInfo->Effects[0].BasePoints = 10;
-                break;
-            case 76857: // Mastery: Critical Block
-                spellInfo->Effects[0].BasePoints = 12;
-                spellInfo->Effects[1].BasePoints = 12;
-                break;
-            case 77489: // Mastery: Echo of Light
-                spellInfo->StackAmount = 100; // should be inf
                 break;
             case 51514: // Hex
             case 118:   // Polymorph
@@ -3229,6 +3199,9 @@ void SpellMgr::LoadSpellCustomAttr()
             case 64904: // Hymn of Hope
                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_MOD_INCREASE_ENERGY_PERCENT;
                break;
+            case 19465: // Improved Stings (Rank 2)
+                spellInfo->Effects[EFFECT_2].TargetA = TARGET_UNIT_CASTER;
+                break;
             case 30421: // Nether Portal - Perseverance
                 spellInfo->Effects[2].BasePoints += 30000;
                 break;
@@ -3320,7 +3293,8 @@ void SpellMgr::LoadSpellCustomAttr()
                 spellInfo->Effects[0].SpellClassMask = flag96(0x00000040, 0x00000000, 0x00000000);
                 break;
             case 63163: // Apply Enchanted Bridle (Argent Tournament)
-               spellInfo->Effects[0].DieSides = 0;
+                spellInfo->Effects[0].DieSides = 0; // was 1, that should probably mean seat 0, but instead it's treated as spell 1
+                spellInfo->Effects[0].BasePoints = 52391; // Ride Vehicle (forces seat 0)
                 break;
             case 19970: // Entangling Roots (Rank 6) -- Nature's Grasp Proc
             case 19971: // Entangling Roots (Rank 5) -- Nature's Grasp Proc

@@ -60,7 +60,7 @@ Map::~Map()
     while (!i_worldObjects.empty())
     {
         WorldObject* obj = *i_worldObjects.begin();
-        ASSERT(obj->m_isWorldObject);
+        ASSERT(obj->IsWorldObject());
         //ASSERT(obj->GetTypeId() == TYPEID_CORPSE);
         obj->RemoveFromWorld();
         obj->ResetMap();
@@ -239,7 +239,7 @@ template<class T>
 void Map::AddToGrid(T* obj, Cell const& cell)
 {
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
-    if (obj->m_isWorldObject)
+    if (obj->IsWorldObject())
         grid->GetGridType(cell.CellX(), cell.CellY()).template AddWorldObject<T>(obj);
     else
         grid->GetGridType(cell.CellX(), cell.CellY()).template AddGridObject<T>(obj);
@@ -249,7 +249,7 @@ template<>
 void Map::AddToGrid(Creature* obj, Cell const& cell)
 {
     NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
-    if (obj->m_isWorldObject)
+    if (obj->IsWorldObject())
         grid->GetGridType(cell.CellX(), cell.CellY()).AddWorldObject(obj);
     else
         grid->GetGridType(cell.CellX(), cell.CellY()).AddGridObject(obj);
@@ -257,9 +257,9 @@ void Map::AddToGrid(Creature* obj, Cell const& cell)
     obj->SetCurrentCell(cell);
 }
 
-template<class T>
-void Map::SwitchGridContainers(T* obj, bool on)
+void Map::SwitchGridContainers(Creature* obj, bool on)
 {
+    ASSERT(!obj->IsPermanentWorldObject());
     CellCoord p = Trinity::ComputeCellCoord(obj->GetPositionX(), obj->GetPositionY());
     if (!p.IsCoordValid())
     {
@@ -279,14 +279,17 @@ void Map::SwitchGridContainers(T* obj, bool on)
 
     obj->RemoveFromGrid(); //This step is not really necessary but we want to do ASSERT in remove/add
     if (on)
-        grid.AddWorldObject<T>(obj);
+    {
+        grid.AddWorldObject(obj);
+        AddWorldObject(obj);
+    }
     else
-        grid.AddGridObject<T>(obj);
-    obj->m_isWorldObject = on;
+    {
+        grid.AddGridObject(obj);
+        RemoveWorldObject(obj);
+    }
+    obj->m_isTempWorldObject = on;
 }
-
-template void Map::SwitchGridContainers(Creature*, bool);
-//template void Map::SwitchGridContainers(DynamicObject*, bool);
 
 template<class T>
 void Map::DeleteFromWorld(T* obj)
@@ -910,8 +913,15 @@ bool Map::UnloadGrid(NGridType& ngrid, bool unloadAll)
     const uint32 y = ngrid.getY();
 
     {
-        if (!unloadAll && ActiveObjectsNearGrid(ngrid))
-             return false;
+        if (!unloadAll)
+        {
+            //pets, possessed creatures (must be active), transport passengers
+            if (ngrid.GetWorldObjectCountInNGrid<Creature>())
+                return false;
+
+            if (ActiveObjectsNearGrid(ngrid))
+                return false;
+        }
 
         sLog->outDebug(LOG_FILTER_MAPS, "Unloading grid[%u, %u] for map %u", x, y, GetId());
 
@@ -1530,6 +1540,24 @@ inline GridMap* Map::GetGrid(float x, float y)
     return GridMaps[gx][gy];
 }
 
+float Map::GetWaterOrGroundLevel(float x, float y, float z, float* pGround /*= NULL*/, bool swim /*= false*/) const
+{
+    if (const_cast<Map*>(this)->GetGrid(x, y))
+    {
+        // we need ground level (including grid height version) for proper return water level in point
+        float ground_z = GetHeight(x, y, z, true, 50.0f);
+        if (pGround)
+            *pGround = ground_z;
+
+        LiquidData liquid_status;
+
+        ZLiquidStatus res = getLiquidStatus(x, y, ground_z, MAP_ALL_LIQUIDS, &liquid_status);
+        return res ? ( swim ? liquid_status.level - 2.0f : liquid_status.level) : ground_z;
+    }
+
+    return VMAP_INVALID_HEIGHT_VALUE;
+}
+
 float Map::GetHeight(float x, float y, float z, bool checkVMap /*= true*/, float maxSearchDist /*= DEFAULT_HEIGHT_SEARCH*/) const
 {
     // find raw .map surface under Z coordinates
@@ -1976,15 +2004,8 @@ void Map::RemoveAllObjectsInRemoveList()
         bool on = itr->second;
         i_objectsToSwitch.erase(itr);
 
-        switch (obj->GetTypeId())
-        {
-            case TYPEID_UNIT:
-                if (!obj->ToCreature()->isPet())
-                    SwitchGridContainers(obj->ToCreature(), on);
-                break;
-            default:
-                break;
-        }
+        if (obj->GetTypeId() == TYPEID_UNIT && !obj->IsPermanentWorldObject())
+            SwitchGridContainers(obj->ToCreature(), on);
     }
 
     //sLog->outDebug(LOG_FILTER_MAPS, "Object remover 1 check.");

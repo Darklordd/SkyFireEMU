@@ -1194,9 +1194,9 @@ void MovementInfo::OutDebug()
 }
 
 WorldObject::WorldObject(): WorldLocation(),
-m_isWorldObject(false), m_name(""), m_isActive(false), m_zoneScript(NULL),
-m_transport(NULL), m_currMap(NULL), m_InstanceId(0),
-m_phaseMask(PHASEMASK_NORMAL), m_notifyflags(0), m_executed_notifies(0)
+    m_isWorldObject(false), m_name(""), m_isActive(false), m_zoneScript(NULL),
+    m_transport(NULL), m_currMap(NULL), m_InstanceId(0),
+    m_phaseMask(PHASEMASK_NORMAL), m_notifyflags(0), m_executed_notifies(0)
 {
     m_serverSideVisibility.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE | GHOST_VISIBILITY_GHOST);
     m_serverSideVisibilityDetect.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE);
@@ -1208,6 +1208,17 @@ void WorldObject::SetWorldObject(bool on)
         return;
 
     GetMap()->AddObjectToSwitchList(this, on);
+}
+
+bool WorldObject::IsWorldObject() const
+{
+    if (m_isWorldObject)
+        return true;
+
+    if (ToCreature() && ToCreature()->m_isTempWorldObject)
+        return true;
+
+    return false;
 }
 
 void WorldObject::setActive(bool on)
@@ -1580,6 +1591,70 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float &z) const
     float new_z = GetBaseMap()->GetHeight(x, y, z, true);
     if (new_z > INVALID_HEIGHT)
         z = new_z+ 0.05f;                                   // just to be sure that we are not a few pixel under the surface
+}
+
+void WorldObject::UpdateAllowedPositionZ(float x, float y, float &z) const
+{
+    switch (GetTypeId())
+    {
+    case TYPEID_UNIT:
+        {
+            // non fly unit don't must be in air
+            // non swim unit must be at ground (mostly speedup, because it don't must be in water and water level check less fast
+            if (!((Creature const*)this)->canFly())
+            {
+                bool canSwim = ((Creature const*)this)->canSwim();
+                float ground_z = z;
+                float max_z = canSwim
+                    ? GetBaseMap()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK))
+                    : ((ground_z = GetBaseMap()->GetHeight(x, y, z, true)));
+                if (max_z > INVALID_HEIGHT)
+                {
+                    if (z > max_z)
+                        z = max_z;
+                    else if (z < ground_z)
+                        z = ground_z;
+                }
+            }
+            else
+            {
+                float ground_z = GetBaseMap()->GetHeight(x, y, z, true);
+                if (z < ground_z)
+                    z = ground_z;
+            }
+            break;
+        }
+    case TYPEID_PLAYER:
+        {
+            // for server controlled moves player work same as creature (but it can always swim)
+            if (!((Player const*)this)->canFly())
+            {
+                float ground_z = z;
+                float max_z = GetBaseMap()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK));
+                if (max_z > INVALID_HEIGHT)
+                {
+                    if (z > max_z)
+                        z = max_z;
+                    else if (z < ground_z)
+                        z = ground_z;
+                }
+            }
+            else
+            {
+                float ground_z = GetBaseMap()->GetHeight(x, y, z, true);
+                if (z < ground_z)
+                    z = ground_z;
+            }
+            break;
+        }
+    default:
+        {
+            float ground_z = GetBaseMap()->GetHeight(x, y, z, true);
+            if(ground_z > INVALID_HEIGHT)
+                z = ground_z;
+            break;
+        }
+    }
 }
 
 bool Position::IsPositionValid() const
@@ -2049,7 +2124,7 @@ void WorldObject::SetMap(Map* map)
     m_currMap = map;
     m_mapId = map->GetId();
     m_InstanceId = map->GetInstanceId();
-    if (m_isWorldObject)
+    if (IsWorldObject())
         m_currMap->AddWorldObject(this);
 }
 
@@ -2057,7 +2132,7 @@ void WorldObject::ResetMap()
 {
     ASSERT(m_currMap);
     ASSERT(!IsInWorld());
-    if (m_isWorldObject)
+    if (IsWorldObject())
         m_currMap->RemoveWorldObject(this);
     m_currMap = NULL;
     //maybe not for corpse
@@ -2146,23 +2221,23 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
     TempSummon* summon = NULL;
     switch (mask)
     {
-        case UNIT_MASK_SUMMON:
-            summon = new TempSummon(properties, summoner);
-            break;
-        case UNIT_MASK_GUARDIAN:
-            summon = new Guardian(properties, summoner);
-            break;
-        case UNIT_MASK_PUPPET:
-            summon = new Puppet(properties, summoner);
-            break;
-        case UNIT_MASK_TOTEM:
-            summon = new Totem(properties, summoner);
-            break;
-        case UNIT_MASK_MINION:
-            summon = new Minion(properties, summoner);
-            break;
-        default:
-            return NULL;
+    case UNIT_MASK_SUMMON:
+        summon = new TempSummon(properties, summoner);
+        break;
+    case UNIT_MASK_GUARDIAN:
+        summon = new Guardian(properties, summoner);
+        break;
+    case UNIT_MASK_PUPPET:
+        summon = new Puppet(properties, summoner);
+        break;
+    case UNIT_MASK_TOTEM:
+        summon = new Totem(properties, summoner);
+        break;
+    case UNIT_MASK_MINION:
+        summon = new Minion(properties, summoner);
+        break;
+    default:
+        return NULL;
     }
 
     if (!summon->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), this, phase, entry, vehId, team, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation()))

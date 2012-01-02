@@ -66,7 +66,7 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_MOVE                = 0x00000008,   // 3    removed by any movement
     AURA_INTERRUPT_FLAG_TURNING             = 0x00000010,   // 4    removed by any turning
     AURA_INTERRUPT_FLAG_JUMP                = 0x00000020,   // 5    removed by entering combat
-    AURA_INTERRUPT_FLAG_NOT_MOUNTED         = 0x00000040,   // 6    removed by unmounting
+    AURA_INTERRUPT_FLAG_NOT_MOUNTED         = 0x00000040,   // 6    removed by dismounting
     AURA_INTERRUPT_FLAG_NOT_ABOVEWATER      = 0x00000080,   // 7    removed by entering water
     AURA_INTERRUPT_FLAG_NOT_UNDERWATER      = 0x00000100,   // 8    removed by leaving water
     AURA_INTERRUPT_FLAG_NOT_SHEATHED        = 0x00000200,   // 9    removed by unsheathing
@@ -137,6 +137,7 @@ enum SpellModType
 class Aura;
 class AuraEffect;
 class SpellInfo;
+
 // Spell modifier (used for modify other spells)
 struct SpellModifier
 {
@@ -524,13 +525,24 @@ enum UnitState
     UNIT_STAT_MOVE            = 0x00100000,
     UNIT_STAT_ROTATING        = 0x00200000,
     UNIT_STAT_EVADE           = 0x00400000,
+    UNIT_STAT_ROAMING_MOVE    = 0x00800000,
+    UNIT_STAT_CONFUSED_MOVE   = 0x01000000,
+    UNIT_STAT_FLEEING_MOVE    = 0x02000000,
+    UNIT_STAT_CHASE_MOVE      = 0x04000000,
+    UNIT_STAT_FOLLOW_MOVE     = 0x08000000,
+    UNIT_STAT_IGNORE_PATHFINDING    = 0x10000000,               // do not use pathfinding in any MovementGenerator
+
     UNIT_STAT_UNATTACKABLE    = (UNIT_STAT_IN_FLIGHT | UNIT_STAT_ONVEHICLE),
-    UNIT_STAT_MOVING          = (UNIT_STAT_ROAMING | UNIT_STAT_CHASE),
+    //UNIT_STAT_MOVING          = (UNIT_STAT_ROAMING | UNIT_STAT_CHASE),
+    // for real move using movegen check and stop (except unstoppable flight)
+    UNIT_STAT_MOVING          = UNIT_STAT_ROAMING_MOVE | UNIT_STAT_CONFUSED_MOVE | UNIT_STAT_FLEEING_MOVE| UNIT_STAT_CHASE_MOVE | UNIT_STAT_FOLLOW_MOVE ,
     UNIT_STAT_CONTROLLED      = (UNIT_STAT_CONFUSED | UNIT_STAT_STUNNED | UNIT_STAT_FLEEING),
     UNIT_STAT_LOST_CONTROL    = (UNIT_STAT_CONTROLLED | UNIT_STAT_JUMPING | UNIT_STAT_CHARGING),
     UNIT_STAT_SIGHTLESS       = (UNIT_STAT_LOST_CONTROL | UNIT_STAT_EVADE),
     UNIT_STAT_CANNOT_AUTOATTACK     = (UNIT_STAT_LOST_CONTROL | UNIT_STAT_CASTING),
     UNIT_STAT_CANNOT_TURN     = (UNIT_STAT_LOST_CONTROL | UNIT_STAT_ROTATING),
+    // stay by different reasons
+    UNIT_STAT_NOT_MOVE        = UNIT_STAT_ROOT | UNIT_STAT_STUNNED | UNIT_STAT_DIED | UNIT_STAT_DISTRACTED,
     UNIT_STAT_ALL_STATE       = 0xffffffff                      //(UNIT_STAT_STOPPED | UNIT_STAT_MOVING | UNIT_STAT_IN_COMBAT | UNIT_STAT_IN_FLIGHT)
 };
 
@@ -826,6 +838,11 @@ enum UnitTypeMask
     UNIT_MASK_CONTROLABLE_GUARDIAN  = 0x00000100,
     UNIT_MASK_ACCESSORY             = 0x00000200,
 };
+
+namespace Movement
+{
+    class MoveSpline;
+}
 
 enum DiminishingLevels
 {
@@ -1280,8 +1297,6 @@ class Unit : public WorldObject
 
         typedef std::map<uint8, AuraApplication*> VisibleAuraMap;
 
-        virtual ~Unit ();
-
         UnitAI* GetAI() { return i_AI; }
         void SetAI(UnitAI* newAI) { i_AI = newAI; }
 
@@ -1480,7 +1495,7 @@ class Unit : public WorldObject
         bool IsMounted() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_MOUNT); }
         uint32 GetMountID() const { return GetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID); }
         void Mount(uint32 mount, uint32 vehicleId = 0, uint32 creatureEntry = 0);
-        void Unmount();
+        void Dismount();
 
         uint16 GetMaxSkillValueForLevel(Unit const* target = NULL) const { return (target ? getLevelForTarget(target) : getLevel()) * 5; }
         void DealDamageMods(Unit* victim, uint32 &damage, uint32* absorb);
@@ -1514,7 +1529,7 @@ class Unit : public WorldObject
 
         void ApplyResilience(const Unit* victim, int32 * damage, CombatRating type) const;
 
-        float MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, int32 skillDiff, uint32 spellId) const;
+        float MeleeSpellMissChance(const Unit* victim, WeaponAttackType attType, uint32 spellId) const;
         SpellMissInfo MeleeSpellHitResult(Unit* victim, SpellInfo const *spell);
         SpellMissInfo MagicSpellHitResult(Unit* victim, SpellInfo const *spell);
         SpellMissInfo SpellHitResult(Unit* victim, SpellInfo const *spell, bool canReflect = false);
@@ -1658,20 +1673,20 @@ class Unit : public WorldObject
         void JumpTo(float speedXY, float speedZ, bool forward = true);
         void JumpTo(WorldObject *obj, float speedZ);
 
-        void SetFacing(float ori, WorldObject* obj = NULL);
-        void SendMonsterStop(bool on_death = false);
-        void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint32 Time, Player* player = NULL);
-        void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint32 MoveFlags, uint32 time, float speedZ, Player* player = NULL);
-        void SendMonsterMove(MonsterMoveData const& moveData, Player* receiver = NULL);
+        void MonsterMoveWithSpeed(float x, float y, float z, float speed, bool generatePath = false, bool forceDestination = false);
+        //void SetFacing(float ori, WorldObject* obj = NULL);
         void SendMonsterMoveExitVehicle(Position const* newPos);
         //void SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint8 type, uint32 MovementFlags, uint32 Time, Player* player = NULL);
         void SendMonsterMoveTransport(Unit* vehicleOwner);
-        void SendMonsterMoveWithSpeed(float x, float y, float z, uint32 transitTime = 0, Player* player = NULL);
-        void SendMonsterMoveWithSpeedToCurrentDestination(Player* player = NULL);
         void SendMovementFlagUpdate();
-
         template<typename PathElem, typename PathNode>
         void SendMonsterMoveByPath(Path<PathElem, PathNode> const& path, uint32 start, uint32 end);
+        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_LEVITATING);}
+        bool IsWalking() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_WALKING);}
+
+        void SetInFront(Unit const* target);
+        void SetFacingTo(float ori);
+        void SetFacingToObject(WorldObject* pObject);
 
         void SendChangeCurrentVictimOpcode(HostileReference* pHostileReference);
         void SendClearThreatListOpcode();
@@ -1980,13 +1995,7 @@ class Unit : public WorldObject
         void SetBaseWeaponDamage(WeaponAttackType attType , WeaponDamageRange damageRange, float value) { m_weaponDamage[attType][damageRange] = value; }
 
         bool isInFrontInMap(Unit const* target, float distance, float arc = M_PI) const;
-        void SetInFront(Unit const* target)
-        {
-            if (!HasUnitState(UNIT_STAT_CANNOT_TURN))
-                SetOrientation(GetAngle(target));
-        }
         bool isInBackInMap(Unit const* target, float distance, float arc = M_PI) const;
-        void SetFacingToObject(WorldObject* pObject);
 
         // Visibility system
         bool IsVisible() const { return (m_serverSideVisibility.GetValue(SERVERSIDE_VISIBILITY_GM) > SEC_PLAYER) ? false : true; }
@@ -2291,8 +2300,14 @@ class Unit : public WorldObject
         float m_AbsorbHeal;
         float GetAbsorbHeal() const { return m_AbsorbHeal; };
         void SetAbsorbHeal(float heal) { m_AbsorbHeal = heal; };
+
+        // Movement info
+        Movement::MoveSpline * movespline;
+
     protected:
-        explicit Unit ();
+        explicit Unit();
+    public:
+        virtual ~Unit();
 
         UnitAI *i_AI, *i_disabledAI;
 
@@ -2362,9 +2377,12 @@ class Unit : public WorldObject
 
         bool IsAlwaysVisibleFor(WorldObject const* seer) const;
         bool IsAlwaysDetectableFor(WorldObject const* seer) const;
+
+        void DisableSpline();
     private:
         bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura * aura, SpellInfo const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const *& spellProcEvent);
         bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
+        bool HandleHasteAuraProc(Unit* pVictim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
         bool HandleModDamagePctTakenAuraProc(Unit *victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
         bool HandleSpellCritChanceAuraProc(Unit* victim, uint32 damage, AuraEffect* triggredByAura, SpellInfo const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
         bool HandleObsModEnergyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
@@ -2374,6 +2392,8 @@ class Unit : public WorldObject
         bool HandleOverrideClassScriptAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 cooldown);
         bool HandleAuraRaidProcFromChargeWithValue(AuraEffect* triggeredByAura);
         bool HandleAuraRaidProcFromCharge(AuraEffect* triggeredByAura);
+
+        void UpdateSplineMovement(uint32 t_diff);
 
         // player or player's pet
         float GetCombatRatingReduction(CombatRating cr) const;
@@ -2389,6 +2409,7 @@ class Unit : public WorldObject
         uint32 m_state;                                     // Even derived shouldn't modify
         uint32 m_CombatTimer;
         uint32 m_lastManaUse;                               // msecs
+        TimeTrackerSmall m_movesplineTimer;
 
         Diminishing m_Diminishing;
         // Manage all Units that are threatened by us

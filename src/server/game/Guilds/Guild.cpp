@@ -592,12 +592,12 @@ bool Guild::Member::LoadFromDB(Field* fields)
         m_bankRemaining[i].value      = fields[8 + i * 2].GetUInt32();
     }
 
-    SetStats(fields[19].GetString(),
-             fields[20].GetUInt8(),
-             fields[21].GetUInt8(),
-             fields[22].GetUInt16(),
-             fields[23].GetUInt32());
-    m_logoutTime    = fields[24].GetUInt32();
+    SetStats(fields[23].GetString(),
+             fields[24].GetUInt8(),
+             fields[25].GetUInt8(),
+             fields[26].GetUInt16(),
+             fields[27].GetUInt32());
+    m_logoutTime    = fields[28].GetUInt32();
 
     if (!CheckStats())
         return false;
@@ -1322,7 +1322,7 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
     {
         if(itr->second->IsOnline())
             data << float(0); // unk
-        else 
+        else
             data << float(float(::time(NULL) - itr->second->GetLogoutTime()) / DAY);
     }
 

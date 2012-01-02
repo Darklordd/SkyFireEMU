@@ -148,7 +148,7 @@ class boss_mandokir : public CreatureScript
                     if (!CombatStart)
                     {
                         //At combat Start Mandokir is mounted so we must unmount it first
-                        me->Unmount();
+                        me->Dismount();
 
                         //And summon his raptor
                         me->SummonCreature(14988, me->getVictim()->GetPositionX(), me->getVictim()->GetPositionY(), me->getVictim()->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 35000);
@@ -321,7 +321,7 @@ class mob_ohgan : public CreatureScript
                 if (SunderArmor_Timer <= diff)
                 {
                     DoCast(me->getVictim(), SPELL_SUNDERARMOR);
-                    SunderArmor_Timer = 10000 + rand()%5000;
+                    SunderArmor_Timer = urand(10000, 15000);
                 } else SunderArmor_Timer -= diff;
 
                 DoMeleeAttackIfReady();

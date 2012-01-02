@@ -373,7 +373,7 @@ pAuraEffectHandler AuraEffectHandler[TOTAL_AURAS]=
     &AuraEffect::HandleNoImmediateEffect,                         //315 SPELL_AURA_UNDERWATER_WALKING todo
     &AuraEffect::HandleNoImmediateEffect,                         //316 SPELL_AURA_PERIODIC_HASTE implemented in AuraEffect::CalculatePeriodic
     &AuraEffect::HandleNULL,                                      //317 SPELL_AURA_MOD_SPELL_POWER_PCT
-    &AuraEffect::HandleNoImmediateEffect,                         //318 SPELL_AURA_MASTERY
+    &AuraEffect::HandleAuraModMastery,                            //318 SPELL_AURA_MASTERY
     &AuraEffect::HandleModMeleeSpeedPct,                          //319
     &AuraEffect::HandleNULL,                                      //320 NYI
     &AuraEffect::HandleNULL,                                      //321 NYI
@@ -718,7 +718,7 @@ int32 AuraEffect::CalculateAmount(Unit* caster)
 
                     uint32 spellId = 0;
                     uint32 plrskill = player->GetSkillValue(SKILL_RIDING);
-                    uint32 map = player->GetMapId();
+                    uint32 map = GetVirtualMapForMapAndZone(player->GetMapId(), player->GetZoneId());
                     uint32 maxSkill = 0;
                     for(int i = 0; i < MAX_MOUNT_TYPE_COLUMN; i++)
                     {
@@ -2100,21 +2100,6 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
                     if (AuraEffect const* aurEff = target->IsScriptOverriden(m_spellInfo, 831))
                         Rage_val += aurEff->GetAmount() * 10;
                 }
-                // Stance mastery + Tactical mastery (both passive, and last have aura only in defense stance, but need apply at any stance switch)
-                if (target->GetTypeId() == TYPEID_PLAYER)
-                {
-                    PlayerSpellMap const& sp_list = target->ToPlayer()->GetSpellMap();
-                    for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
-                    {
-                        if (itr->second->state == PLAYERSPELL_REMOVED || itr->second->disabled) continue;
-                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(itr->first);
-                        if (spellInfo && spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && spellInfo->SpellIconID == 139)
-                            Rage_val += target->CalculateSpellDamage(target, spellInfo, 0) * 10;
-                    }
-                }
-                if (target->GetPower(POWER_RAGE) > Rage_val)
-                    target->SetPower(POWER_RAGE, Rage_val);
-                break;
             }
             default:
                 break;
@@ -2830,10 +2815,22 @@ void AuraEffect::HandleAuraMounted(AuraApplication const* aurApp, uint8 mode, bo
     Unit* target = aurApp->GetTarget();
     uint32 spellId = (uint32)GetAmount();
     Player *player = target->ToPlayer();
-    if(player && spellId < 2)
+
+    switch(GetId())
     {
-        return;
+        case 55164: // Spectral Gryphon
+            spellId = 86460;
+            break;
+        case 64731: // Sea Turtle
+            spellId = 86496;
+            break;
+        default:
+            break;
     }
+
+    if(player && spellId < 2)
+        return;
+
     if (apply)
     {
         uint32 creatureEntry = GetMiscValue();
@@ -2868,10 +2865,13 @@ void AuraEffect::HandleAuraMounted(AuraApplication const* aurApp, uint8 mode, bo
                 displayID = 0;
 
         target->Mount(displayID, ci->VehicleId, GetMiscValue());
+
+        if(player)
+            player->CastSpell(player, spellId, true);
     }
     else
     {
-        target->Unmount();
+        target->Dismount();
 
         if(player)
             player->RemoveAurasDueToSpell(spellId);
@@ -3719,6 +3719,19 @@ void AuraEffect::HandleModBaseResistance(AuraApplication const* aurApp, uint8 mo
             if (GetMiscValue() & (1<<i))
                 target->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + i), TOTAL_VALUE, float(GetAmount()), apply);
     }
+}
+
+void AuraEffect::HandleAuraModMastery(AuraApplication const* aurApp, uint8 mode, bool apply) const
+{
+    Unit* target = aurApp->GetTarget();
+
+    if(!target || target->GetTypeId() != TYPEID_PLAYER)
+        return;
+
+    int32 rating = target->ToPlayer()->CalculateMasteryRating(GetAmount());
+    target->ToPlayer()->ApplyRatingMod(CR_MASTERY, rating, apply);
+
+    target->ToPlayer()->UpdateMastery();
 }
 
 void AuraEffect::HandleModTargetResistance(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4889,11 +4902,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                     break;
                 case 46361:                                     // Reinforced Net
                     if (caster)
-                    {
-                        float currentGroundLevel = target->GetBaseMap()->GetHeight(target->GetPositionX(), target->GetPositionY(), MAX_HEIGHT);
-                        if (target->GetPositionZ() > currentGroundLevel)
-                            target->GetMotionMaster()->MoveFall(currentGroundLevel);
-                    }
+                        target->GetMotionMaster()->MoveFall();
                     break;
                 case 49028:
                     if (caster)
@@ -4928,10 +4937,13 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                     break;
                 case 63322: // Saronite Vapors
                 {
-                    int32 mana = int32(GetAmount() * pow(2.0f, GetBase()->GetStackAmount())); // mana restore - bp * 2^stackamount
-                    int32 damage = mana * 2; // damage
-                    caster->CastCustomSpell(target, 63337, &mana, NULL, NULL, true);
-                    caster->CastCustomSpell(target, 63338, &damage, NULL, NULL, true);
+                    if (caster)
+                    {
+                        int32 mana = int32(GetAmount() * pow(2.0f, GetBase()->GetStackAmount())); // mana restore - bp * 2^stackamount
+                        int32 damage = mana * 2; // damage
+                        caster->CastCustomSpell(target, 63337, &mana, NULL, NULL, true);
+                        caster->CastCustomSpell(target, 63338, &damage, NULL, NULL, true);
+                    }
                     break;
                 }
                 case 75572: // Eject Spell!
@@ -5507,7 +5519,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
             if (!(mode & AURA_EFFECT_HANDLE_REAL))
                 break;
             // Sentry Totem
-            if (GetId() == 6495 && caster->GetTypeId() == TYPEID_PLAYER)
+            if (GetId() == 6495 && caster && caster->GetTypeId() == TYPEID_PLAYER)
             {
                 if (apply)
                 {
@@ -6139,20 +6151,6 @@ void AuraEffect::HandlePeriodicDummyAuraTick(Unit* target, Unit* caster) const
                     caster->CastCustomSpell(target, 52212, &m_amount, NULL, NULL, true, 0, this);
                 break;
             }
-            // Blood of the North
-            // Reaping
-            // Death Rune Mastery
-            if (GetSpellInfo()->SpellIconID == 3041 || GetSpellInfo()->SpellIconID == 22 || GetSpellInfo()->SpellIconID == 2622)
-            {
-                if (target->GetTypeId() != TYPEID_PLAYER)
-                    return;
-                if (target->ToPlayer()->getClass() != CLASS_DEATH_KNIGHT)
-                    return;
-
-                 // timer expired - remove death runes
-                target->ToPlayer()->RemoveRunesByAuraEffect(this);
-            }
-            break;
         default:
             break;
     }

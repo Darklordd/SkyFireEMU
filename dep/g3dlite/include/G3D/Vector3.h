@@ -1,8 +1,8 @@
 /**
   @file Vector3.h
- 
+
   3D vector class
- 
+
   @maintainer Morgan McGuire, http://graphics.cs.williams.edu
 
   @created 2001-06-02
@@ -26,7 +26,6 @@
 #include <string>
 
 namespace G3D {
-
 class Vector2;
 class Vector4;
 class Vector4int8;
@@ -36,7 +35,7 @@ class Any;
 /**
   <B>Swizzles</B>
  Vector classes have swizzle operators, e.g. <CODE>v.xy()</CODE>, that
- allow selection of arbitrary sub-fields.  These cannot be used as write 
+ allow selection of arbitrary sub-fields.  These cannot be used as write
  masks.  Examples
 
   <PRE>
@@ -47,7 +46,6 @@ Vector2 b;
 b = v.xz();
 j = b.xx();
 </PRE>
-
 
   <B>Warning</B>
 
@@ -74,7 +72,7 @@ public:
 
     /** \param any Must either Vector3(#, #, #) or Vector3 {x = #, y = #, z = #}*/
     Vector3(const Any& any);
-    
+
     /** Converts the Vector3 to an Any. */
     operator Any() const;
 
@@ -87,14 +85,14 @@ public:
     explicit Vector3(float coordinate[3]);
     explicit Vector3(double coordinate[3]);
     Vector3(const class Vector3int16& v);
-	explicit Vector3(class TextInput& t);
+    explicit Vector3(class TextInput& t);
     explicit Vector3(const class Color3& c);
 
-	/** Format is three float32's */
+    /** Format is three float32's */
     void serialize(class BinaryOutput& b) const;
     void deserialize(class BinaryInput& b);
 
-	/** Format is "(%f, %f, %f)" */
+    /** Format is "(%f, %f, %f)" */
     void serialize(class TextOutput& t) const;
     void deserialize(class TextInput& t);
 
@@ -130,7 +128,7 @@ public:
 
     /** Returns true if this vector has length ~= 1 */
     bool isUnit() const;
-    
+
     // arithmetic operations
     Vector3 __fastcall operator+ (const Vector3& v) const;
     Vector3 __fastcall operator- (const Vector3& v) const;
@@ -153,10 +151,10 @@ public:
     Vector3& __fastcall operator/= (const Vector3& v);
 
     /** Same as magnitude */
-	float length() const;
+    float length() const;
 
     float magnitude() const;
-    
+
     /**
      The result is a nan vector if the length is almost zero.
      */
@@ -179,7 +177,7 @@ public:
 
      <PRE>
        V'    N      V
-                 
+
          r   ^   -,
           \  |  /
             \|/
@@ -191,17 +189,16 @@ public:
 
     /**
       See also G3D::Ray::reflect.
-      The length is 1. 
+      The length is 1.
      <PRE>
        V'    N       V
-                 
+
          r   ^    /
           \  |  /
             \|'-
      </PRE>
      */
     Vector3 reflectionDirection(const Vector3& normal) const;
-    
 
     /**
      Returns Vector3::zero() if the length is nearly zero, otherwise
@@ -223,7 +220,7 @@ public:
      where iExit is the index of refraction for the
      previous material and iEnter is the index of refraction
      for the new material.  Like Vector3::reflectionDirection,
-     the result has length 1 and is 
+     the result has length 1 and is
      pointed <I>away</I> from the intersection.
 
      Returns Vector3::zero() in the case of total internal refraction.
@@ -237,7 +234,7 @@ public:
      See also G3D::Ray::refract.
      <PRE>
               N      V
-                  
+
               ^    /
               |  /
               |'-
@@ -265,9 +262,9 @@ public:
     float squaredLength() const;
 
     float squaredMagnitude () const;
-	
+
     float __fastcall dot(const Vector3& rkVector) const;
-    
+
     float unitize(float tolerance = 1e-06);
 
     /** Cross product.  Note that two cross products in a row
@@ -319,14 +316,14 @@ public:
      Linear interpolation
      */
     inline Vector3 lerp(const Vector3& v, float alpha) const {
-        return (*this) + (v - *this) * alpha; 
+        return (*this) + (v - *this) * alpha;
     }
 
     /** Gram-Schmidt orthonormalization. */
     static void orthonormalize (Vector3 akVector[3]);
 
-    /** \brief Random unit vector, uniformly distributed on the sphere. 
-    
+    /** \brief Random unit vector, uniformly distributed on the sphere.
+
        Distribution rendered by G3D::DirectionHistogram:
        \image html vector3-random.png
       */
@@ -334,8 +331,8 @@ public:
 
     /** \brief Random unit vector, distributed according to \f$\max(\cos \theta,0)\f$.
 
-        That is, so that the probability of \f$\vec{V}\f$ is proportional 
-        to \f$\max(\vec{v} \cdot \vec{n}, 0)\f$.  Useful in photon mapping for 
+        That is, so that the probability of \f$\vec{V}\f$ is proportional
+        to \f$\max(\vec{v} \cdot \vec{n}, 0)\f$.  Useful in photon mapping for
         Lambertian scattering.
 
         Distribution rendered by G3D::DirectionHistogram:
@@ -372,7 +369,7 @@ public:
 
     /** Input W must be initialize to a nonzero vector, output is {U,V,W}
         an orthonormal basis.  A hint is provided about whether or not W
-        is already unit length. 
+        is already unit length.
         @deprecated Use getTangents
     */
     static void generateOrthonormalBasis (Vector3& rkU, Vector3& rkV,
@@ -394,30 +391,28 @@ public:
     static const Vector3& unitZ();
     static const Vector3& inf();
     static const Vector3& nan();
-    
+
     /** Smallest (most negative) representable vector */
     static const Vector3& minFinite();
 
     /** Largest representable vector */
     static const Vector3& maxFinite();
 
-
     /** Creates two orthonormal tangent vectors X and Y such that
         if Z = this, X x Y = Z.*/
     inline void getTangents(Vector3& X, Vector3& Y) const {
-        debugAssertM(G3D::fuzzyEq(length(), 1.0f), 
+        debugAssertM(G3D::fuzzyEq(length(), 1.0f),
                      "makeAxes requires Z to have unit length");
-        
+
         // Choose another vector not perpendicular
         X = (abs(x) < 0.9f) ? Vector3::unitX() : Vector3::unitY();
-        
+
         // Remove the part that is parallel to Z
         X -= *this * this->dot(X);
         X /= X.length();
-    
+
         Y = this->cross(X);
     }
-
 
     // 2-char swizzles
 
@@ -563,10 +558,8 @@ inline G3D::Vector3 operator*(int s, const G3D::Vector3& v) {
 
 std::ostream& operator<<(std::ostream& os, const Vector3&);
 
-
 void serialize(const Vector3::Axis& a, class BinaryOutput& bo);
 void deserialize(Vector3::Axis& a, class BinaryInput& bo);
-
 
 //----------------------------------------------------------------------------
 inline Vector3::Vector3() : x(0.0f), y(0.0f), z(0.0f) {
@@ -593,7 +586,6 @@ inline const float& Vector3::operator[] (int i) const {
 inline float& Vector3::operator[] (int i) {
     return ((float*)this)[i];
 }
-
 
 //----------------------------------------------------------------------------
 inline Vector3& Vector3::operator= (const Vector3& rkVector) {
@@ -774,9 +766,7 @@ inline bool Vector3::isZero() const {
 inline bool Vector3::isUnit() const {
     return G3D::fuzzyEq(squaredMagnitude(), 1.0f);
 }
-
 } // namespace G3D
-
 
 template <>
 struct HashTrait<G3D::Vector3> {
@@ -785,7 +775,6 @@ struct HashTrait<G3D::Vector3> {
     }
 };
 
-
 template<> struct PositionTrait<class G3D::Vector2> {
     static void getPosition(const G3D::Vector2& v, G3D::Vector3& p) { p = G3D::Vector3(v, 0); }
 };
@@ -793,6 +782,5 @@ template<> struct PositionTrait<class G3D::Vector2> {
 template<> struct PositionTrait<class G3D::Vector3> {
     static void getPosition(const G3D::Vector3& v, G3D::Vector3& p) { p = v; }
 };
-
 
 #endif

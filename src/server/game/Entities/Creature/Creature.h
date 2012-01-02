@@ -521,6 +521,9 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
         void AI_SendMoveToPacket(float x, float y, float z, uint32 time, uint32 MovementFlags, uint8 type);
         CreatureAI* AI() const { return (CreatureAI*)i_AI; }
 
+        void SetWalk(bool enable);
+        void SetLevitate(bool enable);
+
         uint32 GetShieldBlockValue() const                  //dunno mob block value
         {
             return (getLevel()/2 + uint32(GetStat(STAT_STRENGTH)/20));
@@ -574,7 +577,6 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
         const char* GetNameForLocaleIdx(LocaleConstant locale_idx) const;
 
         void setDeathState(DeathState s);                   // override virtual Unit::setDeathState
-        bool FallGround();
 
         bool LoadFromDB(uint32 guid, Map* map) { return LoadCreatureFromDB(guid, map, false); }
         bool LoadCreatureFromDB(uint32 guid, Map* map, bool addToMap = true);
@@ -708,6 +710,9 @@ class Creature : public Unit, public GridObject<Creature>, public MapCreature
         uint32 GetGUIDTransport() { return guid_transport; }
 
         void FarTeleportTo(Map* map, float X, float Y, float Z, float O);
+
+        bool m_isTempWorldObject; //true when possessed
+
     protected:
         bool CreateFromProto(uint32 guidlow, uint32 Entry, uint32 vehId, uint32 team, const CreatureData* data = NULL);
         bool InitEntry(uint32 entry, uint32 team=ALLIANCE, const CreatureData* data=NULL);

@@ -9,12 +9,18 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 set(Detour_STAT_SRCS
-    DetourAlloc.cpp 
+    DetourAlloc.cpp
+    DetourAlloc.h 
     DetourCommon.cpp 
+    DetourCommon.h 
     DetourNavMesh.cpp 
+    DetourNavMesh.h 
     DetourNavMeshBuilder.cpp 
-    DetourNavMeshQuery.cpp 
+    DetourNavMeshBuilder.h
+    DetourNavMeshQuery.cpp
+    DetourNavMeshQuery.h
     DetourNode.cpp 
+    DetourNode.h
 )
 
 if(WIN32)

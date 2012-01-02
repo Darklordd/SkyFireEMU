@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
  * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
@@ -28,7 +27,6 @@
 #include "UpdateMask.h"
 #include "Path.h"
 #include "WaypointMovementGenerator.h"
-#include "DestinationHolderImp.h"
 
 void WorldSession::HandleTaxiNodeStatusQueryOpcode(WorldPacket & recv_data)
 {
@@ -86,7 +84,7 @@ void WorldSession::HandleTaxiQueryAvailableNodes(WorldPacket & recv_data)
 
     // unknown taxi node case
     if (SendLearnNewTaxiNode(unit))
-		SendTaxiMenu(unit);
+        return;
 
     // known taxi node case
     SendTaxiMenu(unit);
@@ -105,7 +103,7 @@ void WorldSession::SendTaxiMenu(Creature* unit)
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: CMSG_TAXINODE_STATUS_QUERY %u ", curloc);
 
-    WorldPacket data(SMSG_SHOWTAXINODES, (4 + 8 + 4 + 8 * 4)); // Checked for 406a
+    WorldPacket data(SMSG_SHOWTAXINODES, (4+8+4+8*4));
     data << uint32(1);
     data << uint64(unit->GetGUID());
     data << uint32(curloc);
@@ -193,7 +191,7 @@ void WorldSession::HandleActivateTaxiExpressOpcode (WorldPacket & recv_data)
     if (nodes.empty())
         return;
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_ACTIVATETAXIEXPRESS from %d to %d" , nodes.front(), nodes.back());
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_ACTIVATETAXIEXPRESS from %d to %d", nodes.front(), nodes.back());
 
     GetPlayer()->ActivateTaxiPathTo(nodes, npc);
 }
@@ -285,7 +283,7 @@ void WorldSession::HandleActivateTaxiOpcode(WorldPacket & recv_data)
     nodes.resize(2);
 
     recv_data >> guid >> nodes[0] >> nodes[1];
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_ACTIVATETAXI from %d to %d" , nodes[0], nodes[1]);
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Received CMSG_ACTIVATETAXI from %d to %d", nodes[0], nodes[1]);
     Creature* npc = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_FLIGHTMASTER);
     if (!npc)
     {
